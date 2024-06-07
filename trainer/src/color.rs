@@ -25,7 +25,12 @@ impl From<&[MainType]> for Color {
 impl Color {
     pub fn from_str(str: &str) -> Result<Self, <LibColor as FromStr>::Err> {
         let rgb = LibColor::from_str(str)?;
-        let rgb = (rgb.red as MainType, rgb.green as MainType, rgb.blue as MainType);
+        let rgb = (
+            rgb.red as MainType / 255 as MainType,
+            rgb.green as MainType / 255 as MainType,
+            rgb.blue as MainType / 255 as MainType
+        );
+        
         let linear_srgb = srgb_to_linear_srgb(rgb);
         let oklab = Self::from_linear_srgb(linear_srgb);
         return Ok(oklab);
