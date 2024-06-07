@@ -1,6 +1,6 @@
-use wgpu::{util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferBinding, BufferDescriptor, BufferUsages, Device};
+use wgpu::{util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferDescriptor, BufferUsages, Device};
 
-use crate::input::Config;
+
 
 // Should match compute_forwards.wgsl
 pub type MainType = f32;

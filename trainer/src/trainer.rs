@@ -1,10 +1,10 @@
-use color_processing::Color;
+
 use futures::{stream, StreamExt};
-use wgpu::{util::DeviceExt, BindGroup, BindGroupDescriptor, BindGroupEntry, Buffer, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, ComputePassDescriptor};
+use wgpu::{BindGroupDescriptor, BindGroupEntry, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, ComputePassDescriptor};
 
-use crate::{color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{self, Layer, MainType, WeightsAndBiases}, misc::{ceil_div, size_of, SliceExtension}, training_data::TrainingData};
+use crate::{color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{Layer, MainType, WeightsAndBiases}, misc::{ceil_div, size_of, SliceExtension}, training_data::TrainingData};
 
-pub async fn start_training(data: TrainingData, config: Config) {
+pub async fn start_training(_data: TrainingData, config: Config) {
     let gpu = init_gpu().await;
 
     // Init buffers for weights and biases
@@ -20,12 +20,12 @@ pub async fn start_training(data: TrainingData, config: Config) {
 }
 
 pub async fn eval_performance(data: TrainingData) {
-    stream::iter(data.checking).map(|data| {
+    stream::iter(data.checking).map(|_data| {
 
     });
 }
 
-pub async fn compute_forwards(input: &str, gpu: &GpuDeviceData, config: &Config, weights: &WeightsAndBiases) -> color::Color {
+pub async fn compute_forwards(_input: &str, gpu: &GpuDeviceData, config: &Config, weights: &WeightsAndBiases) -> color::Color {
     let buffer = |size, mapped| {
         gpu.device.create_buffer(&BufferDescriptor {
             label: None,
