@@ -1,10 +1,9 @@
 use std::{collections::HashMap};
 
-use color_processing::Color;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 
-use crate::input::{Config, TrainingDataRaw};
+use crate::{color::Color, input::{Config, TrainingDataRaw}};
 
 pub struct TrainingData {
     pub training: HashMap<String, Color>,
@@ -20,7 +19,7 @@ pub fn process_data(raw: TrainingDataRaw, config: &Config) -> (TrainingData, u32
             cut_data += 1;
             continue;
         }
-        output.insert(name, color_str.parse().unwrap());
+        output.insert(name, Color::from_str(&color_str).unwrap());
     }
 
     let mut training = HashMap::<String, Color>::default();
