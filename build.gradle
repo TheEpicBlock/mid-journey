@@ -1,3 +1,5 @@
+import nl.theepicblock.mid.journey.build.FetchWikipedia
+
 plugins {
 	id 'fabric-loom' version '1.6-SNAPSHOT'
 	id 'maven-publish'
@@ -28,6 +30,13 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
 }
+
+// Start of custom build script
+tasks.register("fetch_A_F", FetchWikipedia) {
+	revision = "1224761126"
+	output = layout.buildDirectory.file('trainingData/A-F.wikitext')
+}
+
 
 processResources {
 	inputs.property "version", project.version
