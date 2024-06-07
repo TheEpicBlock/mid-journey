@@ -4,6 +4,7 @@ use color_processing::Color as LibColor;
 
 use crate::layer::MainType;
 
+/// Represents a colour in the oklab colour space
 #[derive(Debug)]
 pub struct Color {
     l: MainType,
