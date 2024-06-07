@@ -1,10 +1,10 @@
 
-use futures::{stream, StreamExt};
+use futures::{future, stream, StreamExt};
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, ComputePassDescriptor};
 
-use crate::{color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{Layer, MainType, WeightsAndBiases}, misc::{ceil_div, size_of, SliceExtension}, training_data::{string_to_data, GpuInputData, TrainingData}};
+use crate::{color::{self, Color}, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{Layer, MainType, WeightsAndBiases}, misc::{ceil_div, size_of, SliceExtension}, training_data::{string_to_data, GpuInputData, TrainingData}};
 
-pub async fn start_training(_data: TrainingData, config: Config) {
+pub async fn start_training(data: TrainingData, config: Config) {
     let gpu = init_gpu().await;
 
     // Init buffers for weights and biases
@@ -15,14 +15,34 @@ pub async fn start_training(_data: TrainingData, config: Config) {
         prev_layer_size = layer_size;
     }
 
-    let res = compute_forwards(string_to_data("e", &config), &gpu, &config, &weights_and_biases).await;
-    dbg!(res);
+    eval_performance(data, &gpu, &config, &weights_and_biases).await;
 }
 
-pub async fn eval_performance(data: TrainingData) {
-    stream::iter(data.checking).map(|_data| {
+pub fn calc_cost(expected: Color, actual: Color) -> MainType {
+    let dl = actual.l - expected.l;
+    let da = actual.a - expected.a;
+    let db = actual.b - expected.b;
+    return dl * dl + da * da + db * db;
+}
 
-    });
+pub async fn eval_performance(data: TrainingData, gpu: &GpuDeviceData, config: &Config, weights: &WeightsAndBiases) {
+    let mut total_err = 0f64;
+    let mut count = 0;
+    let mut min = MainType::MAX;
+    let mut max = MainType::MIN;
+
+    stream::iter(data.checking).then(|data| async {
+        let res = compute_forwards(data.0, gpu, config, weights).await;
+        calc_cost(data.1, res)
+    }).for_each(|result| {
+        total_err += result as f64;
+        count += 1;
+        min = min.min(result);
+        max = max.max(result);
+        future::ready(())
+    }).await;
+
+    println!("Tested on {} datapoints. min/avg/max = ({}, {}, {})", count, min, total_err / (count as f64), max);
 }
 
 pub async fn compute_forwards(input: GpuInputData, gpu: &GpuDeviceData, config: &Config, weights: &WeightsAndBiases) -> color::Color {

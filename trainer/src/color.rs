@@ -7,9 +7,9 @@ use crate::layer::MainType;
 /// Represents a colour in the oklab colour space
 #[derive(Debug)]
 pub struct Color {
-    l: MainType,
-    a: MainType,
-    b: MainType,
+    pub l: MainType,
+    pub a: MainType,
+    pub b: MainType,
 }
 
 impl From<&[MainType]> for Color {
