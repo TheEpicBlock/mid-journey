@@ -19,9 +19,11 @@ fn main() {
     let data: TrainingDataRaw = serde_json::from_reader(File::open(training_data_file).unwrap()).unwrap();
     let config: Config = serde_json::from_reader(File::open(config_file).unwrap()).unwrap();
 
-    let data = process_data(data, &config);
+    let (data, cut_data) = process_data(data, &config);
 
     println!("Starting trainig process!");
-    println!("Training set contains {} entries", data.len());
-    println!("Input length: {}", config.input_length);
+    println!("Training set contains {} entries", data.training.len());
+    println!("Check/verify set contains {} entries", data.checking.len());
+    println!("Total: {} entries", data.training.len() + data.checking.len());
+    println!("Configured to cut off colours to {} characters. This means we cut {} entries", config.input_length, cut_data);
 }
