@@ -1,4 +1,5 @@
 import nl.theepicblock.mid.journey.build.FetchWikipedia
+import nl.theepicblock.mid.journey.build.ParseWikipedia
 
 plugins {
 	id 'fabric-loom' version '1.6-SNAPSHOT'
@@ -31,12 +32,24 @@ dependencies {
 	
 }
 
-// Start of custom build script
+//////////////////////////////////
+// Start of custom build script //
+//////////////////////////////////
+
 tasks.register("fetch_A_F", FetchWikipedia) {
 	revision = "1224761126"
-	output = layout.buildDirectory.file('trainingData/A-F.wikitext')
+	output = layout.buildDirectory.file('trainingData/source/A-F.wikitext')
 }
 
+
+tasks.register("parse_trainingdata", ParseWikipedia) {
+	input.add(tasks.named("fetch_A_F").get().output)
+	output = layout.buildDirectory.file("trainingData/data.json")
+}
+
+////////////////////////////////
+// End of custom build script //
+////////////////////////////////
 
 processResources {
 	inputs.property "version", project.version
