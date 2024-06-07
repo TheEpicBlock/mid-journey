@@ -1,4 +1,10 @@
 {
     "input_length": 32,
-    "percentage_training": 0.8
+    "percentage_training": 0.8,
+    "layers": [
+        64,
+        128,
+        32,
+        3
+    ]
 }
