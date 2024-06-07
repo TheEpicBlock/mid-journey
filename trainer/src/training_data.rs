@@ -3,15 +3,17 @@ use std::{collections::HashMap};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 
-use crate::{color::Color, input::{Config, TrainingDataRaw}};
+use crate::{color::Color, input::{Config, TrainingDataRaw}, layer::MainType};
+
+pub type GpuInputData = Vec<MainType>;
 
 pub struct TrainingData {
-    pub training: HashMap<String, Color>,
-    pub checking: HashMap<String, Color>
+    pub training: Vec::<(GpuInputData, Color)>,
+    pub checking: Vec::<(GpuInputData, Color)>
 }
 
 pub fn process_data(raw: TrainingDataRaw, config: &Config) -> (TrainingData, u32) {
-    let mut output = HashMap::<String, Color>::default();
+    let mut output = Vec::<(GpuInputData, Color)>::default();
     let mut cut_data = 0;
 
     for (name, color_str) in raw {
@@ -19,21 +21,21 @@ pub fn process_data(raw: TrainingDataRaw, config: &Config) -> (TrainingData, u32
             cut_data += 1;
             continue;
         }
-        output.insert(name, Color::from_str(&color_str).unwrap());
+        output.push((string_to_data(&name, config), Color::from_str(&color_str).unwrap()));
     }
 
-    let mut training = HashMap::<String, Color>::default();
-    let mut checking = HashMap::<String, Color>::default();
+    let mut training = Vec::<(GpuInputData, Color)>::default();
+    let mut checking = Vec::<(GpuInputData, Color)>::default();
     
     // Random number, chosen by fair dice roll
     // (having this be deterministic should help reproducability)
     let mut rand = ChaCha20Rng::from_seed([4; 32]);
 
-    for (name, color) in output {
+    for data in output {
         if rand.gen_ratio((10000f64*config.percentage_training) as u32, 10000) {
-            training.insert(name, color);
+            training.push(data);
         } else {
-            checking.insert(name, color);
+            checking.push(data);
         }
     }
 
@@ -41,4 +43,19 @@ pub fn process_data(raw: TrainingDataRaw, config: &Config) -> (TrainingData, u32
         training,
         checking,
     }, cut_data);
+}
+
+pub fn string_to_data(str: &str, config: &Config) -> GpuInputData {
+    let mut output = vec![0 as MainType; config.input_length as usize];
+
+    for (i, char) in str.chars().enumerate() {
+        output[i] = convert_char(char, config);
+    }
+
+    return output;
+}
+
+fn convert_char(char: char, config: &Config) -> MainType {
+    let char = char.to_ascii_lowercase();
+    return *config.letter_mapping.get(&char).unwrap_or(&(0 as MainType));
 }

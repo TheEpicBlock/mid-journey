@@ -1,5 +1,6 @@
 import nl.theepicblock.mid.journey.build.FetchWikipedia
 import nl.theepicblock.mid.journey.build.ParseWikipedia
+import nl.theepicblock.mid.journey.build.Uncomment
 
 plugins {
 	id 'fabric-loom' version '1.6-SNAPSHOT'
@@ -45,6 +46,11 @@ tasks.register("fetch_A_F", FetchWikipedia) {
 tasks.register("parse_trainingdata", ParseWikipedia) {
 	input.add(tasks.named("fetch_A_F").get().output)
 	output = layout.buildDirectory.file("trainingData/data.json")
+}
+
+tasks.register("nn_config", Uncomment) {
+	input = layout.projectDirectory.file("nn_config.jsonc")
+	output = layout.buildDirectory.file("trainingData/nn_config.json")
 }
 
 ////////////////////////////////

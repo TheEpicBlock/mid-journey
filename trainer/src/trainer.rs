@@ -2,7 +2,7 @@
 use futures::{stream, StreamExt};
 use wgpu::{BindGroupDescriptor, BindGroupEntry, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, ComputePassDescriptor};
 
-use crate::{color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{Layer, MainType, WeightsAndBiases}, misc::{ceil_div, size_of, SliceExtension}, training_data::TrainingData};
+use crate::{color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{Layer, MainType, WeightsAndBiases}, misc::{ceil_div, size_of, SliceExtension}, training_data::{string_to_data, GpuInputData, TrainingData}};
 
 pub async fn start_training(_data: TrainingData, config: Config) {
     let gpu = init_gpu().await;
@@ -15,7 +15,7 @@ pub async fn start_training(_data: TrainingData, config: Config) {
         prev_layer_size = layer_size;
     }
 
-    let res = compute_forwards("e", &gpu, &config, &weights_and_biases).await;
+    let res = compute_forwards(string_to_data("e", &config), &gpu, &config, &weights_and_biases).await;
     dbg!(res);
 }
 
@@ -25,7 +25,7 @@ pub async fn eval_performance(data: TrainingData) {
     });
 }
 
-pub async fn compute_forwards(_input: &str, gpu: &GpuDeviceData, config: &Config, weights: &WeightsAndBiases) -> color::Color {
+pub async fn compute_forwards(input: GpuInputData, gpu: &GpuDeviceData, config: &Config, weights: &WeightsAndBiases) -> color::Color {
     let buffer = |size, mapped| {
         gpu.device.create_buffer(&BufferDescriptor {
             label: None,
@@ -38,12 +38,12 @@ pub async fn compute_forwards(_input: &str, gpu: &GpuDeviceData, config: &Config
     // Initialize first buffers
     let input_buf = buffer(config.input_length * size_of::<MainType>(), true);
     {
-        // let mut input_data = input_buf.slice(..).get_mapped_range_mut();
-        // for (i, byte) in input.as_bytes().iter().enumerate() {
-        //     input_data[i] = *byte;
-        // }
-        input_buf.unmap();
+        let mut input_data = input_buf.slice(..).get_mapped_range_mut();
+        for (i, byte) in bytemuck::cast_slice(&input).iter().enumerate() {
+            input_data[i] = *byte;
+        }
     }
+    input_buf.unmap();
 
     // Initialize intermediate/output buffers
     let mut buffers = Vec::new();
