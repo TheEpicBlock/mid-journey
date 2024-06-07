@@ -1,3 +1,6 @@
+# Rust
+trainer/target/
+
 # gradle
 
 .gradle/
