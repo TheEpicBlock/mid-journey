@@ -1,5 +1,7 @@
 use wgpu::{util::{BufferInitDescriptor, DeviceExt}, Buffer, BufferDescriptor, BufferUsages, Device};
 
+use crate::misc::size_of;
+
 
 
 // Should match compute_forwards.wgsl
@@ -20,13 +22,13 @@ impl Layer {
     pub fn create(prev_size: Size, size: Size, device: &Device) -> Self {
         let weights = device.create_buffer(&BufferDescriptor {
             label: None,
-            size: prev_size * size,
+            size: prev_size * size * size_of::<MainType>(),
             usage: BufferUsages::STORAGE,
             mapped_at_creation: true
         });
         let biases = device.create_buffer(&BufferDescriptor {
             label: None,
-            size: prev_size * size,
+            size: size * size_of::<MainType>(),
             usage: BufferUsages::STORAGE,
             mapped_at_creation: true
         });

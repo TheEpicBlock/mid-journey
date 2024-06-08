@@ -22,7 +22,11 @@ fn compute_forwards(
 
     for (var i = u32(0); i < globals.input_size; i++) {
         let matrix_index = i + globals.input_size * global_id.x;
-        output += (previous_layer[i] * layer_activation[matrix_index]) + layer_bias[matrix_index];
+        output += (previous_layer[i] * layer_activation[matrix_index]);
     }
+    output += layer_bias[global_id.x];
+    // The output variable is at this point equal to the result of the "z" function 
+    // in this video: https://youtu.be/tIeHLnjs5U8?t=479
+
     layer_output[global_id.x] = logistic_function(output);
 }
