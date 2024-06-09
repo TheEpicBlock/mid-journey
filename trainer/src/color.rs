@@ -60,9 +60,9 @@ fn srgb_to_linear_srgb(rgb: (MainType, MainType, MainType)) -> (MainType, MainTy
 }
 
 fn f_inv(x: MainType)  -> MainType {
-    return if x >= 0.04045 {
+    if x >= 0.04045 {
         ((x + 0.055)/(1.0 + 0.055)).powf(2.4)
     } else {
         x / 12.92
-    };
+    }
 }

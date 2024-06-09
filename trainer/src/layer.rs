@@ -2,9 +2,7 @@ use std::ops::Deref;
 
 use wgpu::{Buffer, BufferDescriptor, BufferUsages, CommandEncoder, Device, Features};
 
-use crate::{gpu::GpuDeviceData, input::Config, misc::{size_of, SliceExtension}};
-
-
+use crate::{gpu::GpuDeviceData, input::Config, misc::size_of};
 
 // Should match compute_forwards.wgsl
 pub type MainType = f32;
@@ -45,10 +43,10 @@ impl LayerParameters {
         weights.unmap();
         biases.unmap();
 
-        return LayerParameters {
+        LayerParameters {
             weights,
             biases,
-        };
+        }
     }
 }
 
@@ -58,7 +56,7 @@ impl LayerValues {
     }
 
     pub fn create_with_input<F>(gpu: &GpuDeviceData, config: &Config, invocations: usize, initializer: F) -> Self
-            where F: FnOnce(&mut [u8]) -> () {
+            where F: FnOnce(&mut [u8]) {
         let mut buffers = Vec::new();
 
         let input_buf = gpu.device.create_buffer(&BufferDescriptor {
@@ -79,7 +77,7 @@ impl LayerValues {
             buffers.push(gpu.device.create_buffer(&BufferDescriptor {
                 label: Some("nn layer values"),
                 size: layer.size * invocations as u64 * size_of::<MainType>(),
-                usage: usage,
+                usage,
                 mapped_at_creation: false
             }));
         }
@@ -118,7 +116,7 @@ impl Deref for LayerOutput<'_> {
     fn deref(&self) -> &Self::Target {
         match self {
             LayerOutput::Primary(x) => x,
-            LayerOutput::Staging(x) => &x,
+            LayerOutput::Staging(x) => x,
         }
     }
 }

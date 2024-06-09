@@ -33,7 +33,7 @@ pub async fn eval_performance(data: TrainingData, gpu: &GpuDeviceData, config: &
             data.checking.iter().map(|data| &data.0),
             bytemuck::cast_slice_mut::<_, MainType>(gpu_input).chunks_mut(config.input_length as usize)
         ).for_each(|(input_data, gpu_value)| {
-            gpu_value.copy_from_slice(&input_data);
+            gpu_value.copy_from_slice(input_data);
         });
     });
 

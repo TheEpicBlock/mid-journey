@@ -21,8 +21,8 @@ async fn main() {
         return;
     }
 
-    let training_data_file = PathBuf::try_from(&args[1]).unwrap();
-    let config_file = PathBuf::try_from(&args[2]).unwrap();
+    let training_data_file = PathBuf::from(&args[1]);
+    let config_file = PathBuf::from(&args[2]);
 
     let data: TrainingDataRaw = serde_json::from_reader(File::open(training_data_file).unwrap()).unwrap();
     let config: Config = serde_json::from_reader(File::open(config_file).unwrap()).unwrap();

@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use wgpu::{BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, ComputePass, ComputePipeline, Device, PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderStages};
 
 use map_macro::hash_map;
 
-use crate::{gpu::GpuDeviceData, input::{Config, LayerConfig}, layer::Size, misc::ceil_div};
+use crate::{gpu::GpuDeviceData, input::{Config, LayerConfig}, misc::ceil_div};
 
 macro_rules! include_shader {
     ($($token:tt)*) => {
@@ -86,7 +84,7 @@ fn compute_forwards(device: &Device) -> ShaderComponent {
 
     let module = device.create_shader_module(include_shader!("compute_forwards.wgsl"));
 
-    return ShaderComponent(bind_group_layout, module);
+    ShaderComponent(bind_group_layout, module)
 }
 
 impl ShaderComponents {

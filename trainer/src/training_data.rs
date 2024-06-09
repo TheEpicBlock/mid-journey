@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 
@@ -39,10 +37,7 @@ pub fn process_data(raw: TrainingDataRaw, config: &Config) -> (TrainingData, u32
         }
     }
 
-    return (TrainingData {
-        training,
-        checking,
-    }, cut_data);
+    (TrainingData { training, checking, }, cut_data)
 }
 
 pub fn string_to_data(str: &str, config: &Config) -> GpuInputData {

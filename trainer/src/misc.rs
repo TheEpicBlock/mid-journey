@@ -24,7 +24,7 @@ pub fn size_of<T>() -> u64 {
 }
 
 pub fn ceil_div(a: u32, b: u64) -> u32 {
-    return (a as f64 / b as f64).ceil() as u32;
+    (a as f64 / b as f64).ceil() as u32
 }
 
 macro_rules! bind_group {

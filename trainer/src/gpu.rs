@@ -15,11 +15,11 @@ pub async fn init_gpu() -> GpuDeviceData {
 
     let shader_components = ShaderComponents::init(&device);
 
-    return GpuDeviceData {
+    GpuDeviceData {
         device,
         queue,
         shader_components,
-    };
+    }
 }
 
 pub async fn init_adapter() -> Adapter {
@@ -29,10 +29,10 @@ pub async fn init_adapter() -> Adapter {
         flags: Default::default(),
         gles_minor_version: Default::default(),
     });
-    let adapter = instance.request_adapter(&&wgpu::RequestAdapterOptions {
+
+    return instance.request_adapter(&&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::default(),
         force_fallback_adapter: false,
         compatible_surface: None,
     }).await.expect("Couldn't request WebGPU adapter. Please ensure WebGPU is available for your device");
-    return adapter;
 }
