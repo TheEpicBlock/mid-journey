@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
+use bytemuck::{Pod, Zeroable};
 use color_processing::Color as LibColor;
 
 use crate::layer::MainType;
 
 /// Represents a colour in the oklab colour space
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+#[repr(C)]
 pub struct Color {
     pub l: MainType,
     pub a: MainType,

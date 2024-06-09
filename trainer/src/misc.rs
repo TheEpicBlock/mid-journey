@@ -26,3 +26,26 @@ pub fn size_of<T>() -> u64 {
 pub fn ceil_div(a: u32, b: u64) -> u32 {
     return (a as f64 / b as f64).ceil() as u32;
 }
+
+macro_rules! bind_group {
+    ($layout:expr, $($index:expr => $buffer:expr),+$(,)?) => {
+        wgpu::BindGroupDescriptor {
+            label: None,
+            layout: $layout,
+            entries: &[
+                $(
+                    wgpu::BindGroupEntry {
+                        binding: $index,
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                            buffer: $buffer,
+                            offset: 0,
+                            size: None,
+                        })
+                    }
+                ),+
+            ]
+        }
+    };
+}
+
+pub(crate) use bind_group;

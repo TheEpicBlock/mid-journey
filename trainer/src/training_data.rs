@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
