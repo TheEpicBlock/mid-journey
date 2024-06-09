@@ -5,9 +5,11 @@ use crate::{color::Color, input::{Config, TrainingDataRaw}, layer::MainType};
 
 pub type GpuInputData = Vec<MainType>;
 
+pub type DataSet = Vec<(GpuInputData, Color)>;
+
 pub struct TrainingData {
-    pub training: Vec::<(GpuInputData, Color)>,
-    pub checking: Vec::<(GpuInputData, Color)>
+    pub training: DataSet,
+    pub checking: DataSet
 }
 
 pub fn process_data(raw: TrainingDataRaw, config: &Config) -> (TrainingData, u32) {

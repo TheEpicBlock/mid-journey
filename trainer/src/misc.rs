@@ -27,6 +27,28 @@ pub fn ceil_div(a: u32, b: u64) -> u32 {
     (a as f64 / b as f64).ceil() as u32
 }
 
+macro_rules! bind_group_layout {
+    ($({ binding: $index:expr, read_only: $read_only:expr }),+$(,)?) => {
+        wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                $(
+                    wgpu::BindGroupLayoutEntry {
+                        binding: $index,
+                        visibility: ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: $read_only },
+                            has_dynamic_offset: false,
+                            min_binding_size: None
+                        },
+                        count: None,
+                    }
+                ),+
+            ]
+        }
+    }
+}
+
 macro_rules! bind_group {
     ($layout:expr, $($index:expr => $buffer:expr),+$(,)?) => {
         wgpu::BindGroupDescriptor {
@@ -49,3 +71,4 @@ macro_rules! bind_group {
 }
 
 pub(crate) use bind_group;
+pub(crate) use bind_group_layout;

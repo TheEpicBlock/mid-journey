@@ -19,6 +19,8 @@ pub struct LayerConfig {
     /// Size of the preceeding layer
     pub previous_size: Size,
     pub size: Size,
+    /// Size of the layer afterwards. Will be None iff this is the last layer
+    pub next_size: Option<Size>,
 }
 
 impl Config {
@@ -26,10 +28,11 @@ impl Config {
         let mut previous_size = self.input_length;
         let mut output = Vec::with_capacity(self.layers.len());
 
-        for layer_size in self.layers.iter().copied() {
+        for (i, layer_size) in self.layers.iter().copied().enumerate() {
             output.push(LayerConfig {
-                previous_size,
+                previous_size: if i == 0 { self.input_length } else { self.layers[i-1] },
                 size: layer_size,
+                next_size: self.layers.get(i + 1).copied()
             });
             previous_size = layer_size;
         }

@@ -71,10 +71,10 @@ The value of $`\frac{\partial C_0}{\partial w^{(L)}_{ij}}`$ isn't that hard to c
 Now when we want to do the next layer we need $`\frac{\partial C_0}{\partial a^{(L-1)}_i}`$. This one is a little more complicated:
 
 ```math
-\frac{\partial C_0}{\partial a^{(L-1)}_i} = \sum_{j=1}^{n(L-1)} (w^{(L)}_{ij} \frac{\partial C_0}{\partial z^{(L)}_i})
+\frac{\partial C_0}{\partial a^{(L-1)}_i} = \sum_{j=1}^{n(L)} (w^{(L)}_{ij} \frac{\partial C_0}{\partial z^{(L)}_j})
 ```
 
-This entails that we need to sum the weights and $`\frac{\partial C_0}{\partial z}`$ values of the $L$ layer to compute the $`\frac{\partial C_0}{\partial a}`$ values for $L-1$. In the code this is implemented by having two different shader entrypoints. One which computes $`\frac{\partial C_0}{\partial z^{(L)}_i}`$ using the cost based formula and one which calculates it using the formula based on the previous layer. Once the derivative with respect to $z$ is found, the process is the same.
+This entails that we need to sum the weights and $`\frac{\partial C_0}{\partial z}`$ values of the $L$ layer to compute the $`\frac{\partial C_0}{\partial a}`$ values for $L-1$. In the code this is implemented by having two different shaders. One which computes $`\frac{\partial C_0}{\partial z^{(L)}_i}`$ using the cost based formula and one which calculates it using the formula based on the previous layer. The derivatives of the weights are calculated using a separate shader.
 
 # Applying backpropagation
 

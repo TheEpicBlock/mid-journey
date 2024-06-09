@@ -31,7 +31,7 @@ var<storage, read_write> output_a: array<MainType>;
 @compute @workgroup_size(64)
 fn compute_forwards(
   @builtin(global_invocation_id)
-  global_id : vec3u
+  global_id: vec3u
 ) {
     // global_id.x represents which invocation we're in
     // (this shader is meant to run the same neural network on multiple inputs at once)
@@ -51,7 +51,8 @@ fn compute_forwards(
         let input_activation = input_a[i + global_id.x * invocations];
         output += input_activation * weight;
     }
+    output += biases[global_id.y];
 
     output_a[global_id.y + global_id.x * invocations] = output;
-    output_z[global_id.y + global_id.x * invocations] = logistic_function(output);
+    output_z[global_id.y + global_id.x * invocations] = activation(output);
 }

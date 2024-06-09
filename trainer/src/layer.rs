@@ -26,7 +26,7 @@ pub struct LayerParameters {
 impl LayerParameters {
     pub fn create(prev_size: Size, size: Size, device: &Device) -> Self {
         let weights = device.create_buffer(&BufferDescriptor {
-            label: Some("nn layer weight"),
+            label: Some("nn layer weights"),
             size: prev_size * size * size_of::<MainType>(),
             usage: BufferUsages::STORAGE,
             mapped_at_creation: true

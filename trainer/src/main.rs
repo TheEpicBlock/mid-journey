@@ -24,8 +24,8 @@ async fn main() {
     let training_data_file = PathBuf::from(&args[1]);
     let config_file = PathBuf::from(&args[2]);
 
-    let data: TrainingDataRaw = serde_json::from_reader(File::open(training_data_file).unwrap()).unwrap();
-    let config: Config = serde_json::from_reader(File::open(config_file).unwrap()).unwrap();
+    let data: TrainingDataRaw = serde_json::from_reader(File::open(training_data_file).expect("Can't open training data file")).unwrap();
+    let config: Config = serde_json::from_reader(File::open(config_file).expect("Can't open training data file")).unwrap();
 
     let (data, cut_data) = process_data(data, &config);
 
