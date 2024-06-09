@@ -66,7 +66,7 @@ This is pretty trivial, it's equal to $`2(A^{(L)}_i-e_i)`$. We get to that funct
 We can now use the chain rule to compute the derivatives of other values. First the derivative of z is computed ($`\frac{\partial C_0}{\partial z^{(L)}_i}`$). We use the chain rule here to compute it by multiplying $`\frac{\partial C_0}{\partial a^{(L)}_i}`$ (which we calculated in the previous step) by $`\frac{\partial a^{(L)}_h}{\partial z^{(L)}_h} = \sigma'(z^{(L)}_h)`$. Note that this works for any layer, as long as we have the value of $`\frac{\partial C_0}{\partial a^{(L)}_i}`$ for that layer. Later we'll compute $`\frac{\partial C_0}{\partial a^{(L-1)}_i}`$ which means we can invoke this step again.
 
 Okay, so now we know $`\frac{\partial C_0}{\partial z^{(L)}_i}`$. This happens to be equal to $`\frac{\partial C_0}{\partial b^{(L)}_i}`$ so we now know how to adjust the bias. The shader will store this $z$/$b$ value in a buffer for future reference.
-The value of $`\frac{\partial C_0}{\partial w^{(L)}_{ij}}`$ isn't that hard to compute, it's $`a^{(L-1)}_i \frac{\partial C_0}{\partial z^{(L)}_i}`$
+The value of $`\frac{\partial C_0}{\partial w^{(L)}_{ij}}`$ isn't that hard to compute, it's $`a^{(L-1)}_i \frac{\partial C_0}{\partial z^{(L)}_j}`$
 
 Now when we want to do the next layer we need $`\frac{\partial C_0}{\partial a^{(L-1)}_i}`$. This one is a little more complicated:
 
