@@ -10,7 +10,7 @@ impl SliceExtension for BufferSlice<'_> {
         self.map_async(mode, |result| {
             tx.send(result).expect("Receiver should never be dropped");
         });
-        while !device.poll(wgpu::MaintainBase::Poll) {
+        while !device.poll(wgpu::MaintainBase::Poll).is_queue_empty() {
             tokio::task::yield_now().await;
         }
         device.poll(wgpu::MaintainBase::Wait);

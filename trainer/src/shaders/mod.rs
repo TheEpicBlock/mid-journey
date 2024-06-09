@@ -72,7 +72,7 @@ pub fn compute_forwards(device: &Device) -> Shader {
 
     let pipeline = device.create_compute_pipeline(
         &wgpu::ComputePipelineDescriptor {
-            label: Some("Expand"),
+            label: Some("Compute Forwards"),
             layout: Some(&device.create_pipeline_layout(
                 &PipelineLayoutDescriptor {
                     label: None,
@@ -81,7 +81,8 @@ pub fn compute_forwards(device: &Device) -> Shader {
                 }
             )),
             module: &device.create_shader_module(include_shader!("compute_forwards.wgsl")),
-            entry_point: "compute_forwards"
+            entry_point: "compute_forwards",
+            compilation_options: Default::default(),
         }
     );
 
