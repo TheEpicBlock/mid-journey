@@ -138,22 +138,24 @@ impl TrainingResources {
 
         let mut bind_groups = Vec::new();
         // Create bind groups for all but the final layer
+        // (the layers don't include the input layer, but some of the buffers do. That's why the indexing is so awkward)
         for layer in 0..(config.num_layers() - 1) {
             bind_groups.push(gpu.device.create_bind_group(&bind_group! {
                 &gpu.shader_components.backpropagation.0,
                 0 => &parameters[layer + 1].weights,
-                1 => &eval_resources.z_buffers.buffers[layer],
-                2 => &deriv_z_buffers.buffers[layer + 1],
-                3 => &deriv_z_buffers.buffers[layer],
+                1 => &eval_resources.z_buffers.buffers[layer + 1],
+                2 => &deriv_z_buffers.buffers[layer + 2],
+                3 => &deriv_z_buffers.buffers[layer + 1],
             }));
         }
+        // Create the bind groups for the final layer
         let last_layer_index = config.num_layers() - 1;
         bind_groups.push(gpu.device.create_bind_group(&bind_group! {
             &gpu.shader_components.backpropagation_start.0,
-            0 => &eval_resources.a_buffers.buffers[last_layer_index],
-            1 => &eval_resources.z_buffers.buffers[last_layer_index],
+            0 => &eval_resources.a_buffers.buffers[last_layer_index+1],
+            1 => &eval_resources.z_buffers.buffers[last_layer_index+1],
             2 => &expected_values_buf,
-            3 => &deriv_z_buffers.buffers[last_layer_index]
+            3 => &deriv_z_buffers.buffers[last_layer_index+1]
         }));
 
         Self {
@@ -182,7 +184,7 @@ impl EvalResources {
         let a_buffers = LayerValues::create_with_input(gpu, config, invocations, |gpu_input| {
             Iterator::zip(
                 data.iter().map(|data| &data.0),
-                bytemuck::cast_slice_mut::<_, MainType>(gpu_input).chunks_mut(config.input_length as usize)
+                bytemuck::cast_slice_mut::<_, MainType>(gpu_input).chunks_exact_mut(config.input_length as usize)
             ).for_each(|(input_data, gpu_value)| {
                 gpu_value.copy_from_slice(input_data);
             });

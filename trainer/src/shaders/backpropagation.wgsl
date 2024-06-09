@@ -33,7 +33,7 @@ var<storage, read_write> derivZ: array<MainType>;
 // This shader is used for all backpropagation steps except the first.
 // It derives (dC_0/dz) from the (dC_0/dz) values of the previous step
 // See math.md
-@compute @workgroup_size(64)
+@compute @workgroup_size(workgroup_size.x, workgroup_size.y, workgroup_size.z)
 fn backprop_from_layer(
   @builtin(global_invocation_id)
   global_id: vec3u
@@ -52,7 +52,7 @@ fn backprop_from_layer(
         derivA += weight * next_derivZ;
     }
 
-    let i = global_id.y + layer_size * global_id.x;
+    let i = global_id.y + global_id.x * layer_size;
     derivZ[i] = dActivation(layer_z[i]) * derivA;
 }
 

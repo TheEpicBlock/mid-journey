@@ -25,7 +25,6 @@ pub struct LayerConfig {
 
 impl Config {
     pub fn layers(&self) -> Vec<LayerConfig> {
-        let mut previous_size = self.input_length;
         let mut output = Vec::with_capacity(self.layers.len());
 
         for (i, layer_size) in self.layers.iter().copied().enumerate() {
@@ -34,7 +33,6 @@ impl Config {
                 size: layer_size,
                 next_size: self.layers.get(i + 1).copied()
             });
-            previous_size = layer_size;
         }
 
         return output;

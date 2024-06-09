@@ -1,4 +1,4 @@
-use wgpu::{BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, ComputePass, ComputePipeline, Device, PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderStages};
+use wgpu::{BindGroupLayout, ComputePass, ComputePipeline, Device, PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModule};
 
 use map_macro::hash_map;
 
@@ -6,7 +6,7 @@ use crate::{gpu::GpuDeviceData, input::{Config, LayerConfig}, misc::{bind_group_
 
 macro_rules! include_shader {
     ($($token:tt)*) => {
-        ShaderModuleDescriptor {
+        wgpu::ShaderModuleDescriptor {
             label: Some($($token)*),
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(concat!(include_str!("lib.wgsl"), include_str!($($token)*))))
         }
@@ -175,8 +175,15 @@ pub trait ComputePassExt {
     fn dispatch(&mut self, invocations: usize, layer: LayerConfig);
 }
 
+// Constants here should match the ones in lib.wgsl
+const WORKGROUP_SIZE: (u64, u64, u64) = (32, 2, 1);
+
 impl ComputePassExt for ComputePass<'_> {
     fn dispatch(&mut self, invocations: usize, layer: LayerConfig) {
-        self.dispatch_workgroups(ceil_div(invocations as u32, 64), ceil_div(layer.size as u32, 64), 1)
+        self.dispatch_workgroups(
+            ceil_div(invocations as u32, WORKGROUP_SIZE.0),
+            ceil_div(layer.size as u32, WORKGROUP_SIZE.1),
+            ceil_div(1, WORKGROUP_SIZE.2)
+        )
     }
 }

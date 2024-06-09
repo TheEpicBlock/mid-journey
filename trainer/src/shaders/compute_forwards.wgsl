@@ -28,7 +28,7 @@ var<storage, read_write> output_z: array<MainType>;
 @group(0) @binding(4)
 var<storage, read_write> output_a: array<MainType>;
 
-@compute @workgroup_size(64)
+@compute @workgroup_size(workgroup_size.x, workgroup_size.y, workgroup_size.z)
 fn compute_forwards(
   @builtin(global_invocation_id)
   global_id: vec3u
@@ -48,11 +48,11 @@ fn compute_forwards(
     for (var i: u32 = 0; i < input_size; i++) {
         // The weight from the node in the previous layer to the node we're calculating
         let weight = weights[global_id.y + i * input_size];
-        let input_activation = input_a[i + global_id.x * invocations];
+        let input_activation = input_a[i + global_id.x * input_size];
         output += input_activation * weight;
     }
     output += biases[global_id.y];
 
-    output_a[global_id.y + global_id.x * invocations] = output;
-    output_z[global_id.y + global_id.x * invocations] = activation(output);
+    output_a[global_id.y + global_id.x * output_size] = output;
+    output_z[global_id.y + global_id.x * output_size] = activation(output);
 }

@@ -27,7 +27,7 @@ var<storage, read_write> derivZ: array<MainType>;
 // This shader is used for the first backpropagation step.
 // It derives (dC_0/dz) directly from the cost function
 // See math.md 
-@compute @workgroup_size(64)
+@compute @workgroup_size(workgroup_size.x, workgroup_size.y, workgroup_size.z)
 fn backprop_from_cost(
   @builtin(global_invocation_id)
   global_id: vec3u
@@ -36,7 +36,7 @@ fn backprop_from_cost(
         return;
     }
 
-    let i = global_id.y + layer_size * global_id.x;
+    let i = global_id.y + global_id.x * layer_size;
     
     // Formula explained in math.md
     let derivA = 2*(layer_a[i] - expected_a[i]);

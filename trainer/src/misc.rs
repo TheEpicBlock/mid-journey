@@ -35,7 +35,7 @@ macro_rules! bind_group_layout {
                 $(
                     wgpu::BindGroupLayoutEntry {
                         binding: $index,
-                        visibility: ShaderStages::COMPUTE,
+                        visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: $read_only },
                             has_dynamic_offset: false,
