@@ -14,7 +14,7 @@ pub async fn start_training(data: TrainingData, config: Config) {
 
     assert!(data.training.len() > 0, "No training data");
 
-    eval_performance(&data.checking, &gpu, &config, &network_parameters).await;
+    eval_performance(&data.training, &gpu, &config, &network_parameters).await;
 
     let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.training);
 
@@ -22,7 +22,7 @@ pub async fn start_training(data: TrainingData, config: Config) {
     run_training_step(&gpu, &resources);
     gpu.device.stop_capture();
 
-    eval_performance(&data.checking, &gpu, &resources.config, &network_parameters).await;
+    eval_performance(&data.training, &gpu, &resources.config, &network_parameters).await;
 
     // for _ in 0..99 {
     //     run_training_step(&gpu, &resources);
@@ -51,10 +51,16 @@ fn run_training_step(gpu: &GpuDeviceData, resources: &TrainingResources) {
         pass.set_bind_group(0, &resources.backprop_bind_groups[layer], &[]);
         shaders[layer].backpropagation.setup_pass(&mut pass);
     }
+
+    // Apply backpropagation steps
     for layer in 0..config.num_layers() {
         let mut pass = commands.begin_compute_pass(&Default::default());
         pass.set_bind_group(0, &resources.backprop_bias_apply_bind_groups[layer], &[]);
         shaders[layer].apply_backprop_biases.setup_pass(&mut pass);
+        drop(pass);
+        let mut pass = commands.begin_compute_pass(&Default::default());
+        pass.set_bind_group(0, &resources.backprop_weight_apply_bind_groups[layer], &[]);
+        shaders[layer].apply_backprop_weights.setup_pass(&mut pass);
     }
 
     // Submit everything
@@ -119,7 +125,8 @@ struct TrainingResources {
     deriv_z_buffers: LayerValues,
     eval_resources: EvalResources,
     backprop_bind_groups: Vec<BindGroup>,
-    backprop_bias_apply_bind_groups: Vec<BindGroup>
+    backprop_bias_apply_bind_groups: Vec<BindGroup>,
+    backprop_weight_apply_bind_groups: Vec<BindGroup>,
 }
 
 impl TrainingResources {
@@ -174,13 +181,23 @@ impl TrainingResources {
                 1 => &parameters[layer].biases,
             }));
         }
+        let mut weight_apply_bind_groups = Vec::new();
+        for layer in 0..config.num_layers() {
+            weight_apply_bind_groups.push(gpu.device.create_bind_group(&bind_group! {
+                &eval_resources.shaders[layer].apply_backprop_weights.get_layout(),
+                0 => &eval_resources.a_buffers.buffers[layer],
+                1 => &deriv_z_buffers.buffers[layer + 1],
+                2 => &parameters[layer].weights,
+            }));
+        }
 
         Self {
             config,
             deriv_z_buffers,
             eval_resources,
             backprop_bind_groups: bind_groups,
-            backprop_bias_apply_bind_groups: bias_apply_bind_groups
+            backprop_bias_apply_bind_groups: bias_apply_bind_groups,
+            backprop_weight_apply_bind_groups: weight_apply_bind_groups,
         }
     }
 }

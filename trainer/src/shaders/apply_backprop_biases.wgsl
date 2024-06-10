@@ -23,9 +23,9 @@ var<storage, read> derivZ: array<MainType>;
 @group(0) @binding(1)
 var<storage, read_write> biases: array<MainType>;
 
-const WORKGROUP_SIZE: u32 = 16;
+// Should match constants in `BackpropApplyBiasShaderPipeline` in shaders/mod.rs
+const WORKGROUP_SIZE: u32 = 8;
 
-// type: array<array<MainType, workers_per_node>, layer_size>
 var<workgroup> tempstorage_sum: array<array<MainType, workers_per_node>, WORKGROUP_SIZE>;
 
 @compute @workgroup_size(workers_per_node, WORKGROUP_SIZE)
@@ -41,14 +41,15 @@ fn apply_biases(
     }
 
     // Each node has a number of workers which will sum the derivatives in parallel
-    // which worker we are is indicated by local_id.y
+    // which worker we are is indicated by local_id.x
     var iters = invocations / workers_per_node;
-    if (local_id.y == workers_per_node - 1) {
+    if (local_id.x == workers_per_node - 1) {
         iters += invocations % workers_per_node; // One worker needs to handle the remainder
     }
     tempstorage_sum[local_id.y][local_id.x] = MainType(0);
     for (var i: u32 = 0; i < iters; i++) {
-        tempstorage_sum[local_id.y][local_id.x] += derivZ[global_id.y + (local_id.x * iters + i) * layer_size];
+        let invocation_index = (local_id.x * iters + i);
+        tempstorage_sum[local_id.y][local_id.x] += derivZ[global_id.y + invocation_index * layer_size];
     }
 
     // Wait until everyone is done
