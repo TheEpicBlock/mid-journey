@@ -76,6 +76,6 @@ fn apply_weights(
         for (var i: u32 = 0; i < workers_per_node; i++) {
             sum += tempstorage_sum[local_id.z][local_id.y][i];
         }
-        weights[global_id.y + global_id.z * previous_layer_size] += sum / MainType(invocations);
+        weights[global_id.y + global_id.z * previous_layer_size] -= sum / MainType(invocations);
     }
 }

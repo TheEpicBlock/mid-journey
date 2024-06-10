@@ -78,4 +78,4 @@ This entails that we need to sum the weights and $`\frac{\partial C_0}{\partial 
 
 # Applying backpropagation
 
-Now there's one final step left to go. We have the derivatives of each of all our parameters. We just need to apply them to improve our network. One tiny thing to take into account: the derivatives have been computed for each *invocation* of our network. We want to average all the derivatives. Then we can simply sum the derivatives with our current weights and biases to improve our network. Repeat this several times to train your network!
+Now there's one final step left to go. We have the derivatives of each of all our parameters. We just need to apply them to improve our network. One tiny thing to take into account: the derivatives have been computed for each *invocation* of our network. We want to average all the derivatives. Then we can simply subtract the derivatives from our current weights and biases to improve our network. Repeat this several times to train your network!
