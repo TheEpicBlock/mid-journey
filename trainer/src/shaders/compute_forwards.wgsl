@@ -53,6 +53,6 @@ fn compute_forwards(
     }
     output += biases[global_id.y];
 
-    output_a[global_id.y + global_id.x * output_size] = output;
-    output_z[global_id.y + global_id.x * output_size] = activation(output);
+    output_z[global_id.y + global_id.x * output_size] = output;
+    output_a[global_id.y + global_id.x * output_size] = activation(output);
 }
