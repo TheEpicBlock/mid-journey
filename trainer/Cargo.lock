@@ -1148,6 +1148,7 @@ dependencies = [
  "futures",
  "futures-channel",
  "map-macro",
+ "num-traits",
  "rand",
  "rand_chacha",
  "serde",

@@ -1,7 +1,7 @@
 alias MainType = f32;
 
 // Should match the constants in shaders/mod.rs
-const workgroup_size = vec3(32, 2, 1);
+const STD_WORKGROUP_SIZE = vec3(32, 2, 1);
 
 // The activation function
 fn activation(x: MainType) -> MainType {

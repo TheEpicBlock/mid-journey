@@ -1,3 +1,6 @@
+use std::ops::{Add, Range, RangeTo};
+
+use num_traits::One;
 use wgpu::{BufferSlice, MapMode, BufferAsyncError, Device};
 
 pub trait SliceExtension {
@@ -25,6 +28,10 @@ pub fn size_of<T>() -> u64 {
 
 pub fn ceil_div(a: u32, b: u64) -> u32 {
     (a as f64 / b as f64).ceil() as u32
+}
+
+pub fn floor_div(a: usize, b: usize) -> usize {
+    (a as f64 / b as f64).floor() as usize
 }
 
 macro_rules! bind_group_layout {
@@ -72,3 +79,31 @@ macro_rules! bind_group {
 
 pub(crate) use bind_group;
 pub(crate) use bind_group_layout;
+
+pub struct IterPow2<T> {
+    current: T,
+    target: T,
+}
+
+impl <T> Iterator for IterPow2<T> where T: Add<Output = T> + Ord + Copy {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.target {
+            return None;
+        }
+
+        let prev = self.current;
+        self.current = self.current + self.current;
+        return Some(prev);
+    }
+}
+
+impl<T> IterPow2<T> where T: One {
+    pub fn range(r: RangeTo<T>) -> Self {
+        Self {
+            current: T::one(),
+            target: r.end,
+        }
+    }
+}

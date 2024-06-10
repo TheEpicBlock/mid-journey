@@ -28,7 +28,7 @@ var<storage, read_write> output_z: array<MainType>;
 @group(0) @binding(4)
 var<storage, read_write> output_a: array<MainType>;
 
-@compute @workgroup_size(workgroup_size.x, workgroup_size.y, workgroup_size.z)
+@compute @workgroup_size(STD_WORKGROUP_SIZE.x, STD_WORKGROUP_SIZE.y, STD_WORKGROUP_SIZE.z)
 fn compute_forwards(
   @builtin(global_invocation_id)
   global_id: vec3u

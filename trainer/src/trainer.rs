@@ -1,7 +1,7 @@
 
-use wgpu::{BindGroup, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, RenderBundleEncoderDescriptor};
+use wgpu::{BindGroup, BufferDescriptor, BufferUsages, CommandEncoderDescriptor};
 
-use crate::{color::Color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::{ComputePassExt, ShaderSet}, training_data::{DataSet, GpuInputData, TrainingData}};
+use crate::{color::Color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, training_data::{DataSet, TrainingData}};
 
 pub async fn start_training(data: TrainingData, config: Config) {
     let gpu = init_gpu().await;
@@ -14,15 +14,19 @@ pub async fn start_training(data: TrainingData, config: Config) {
 
     assert!(data.training.len() > 0, "No training data");
 
+    eval_performance(&data.checking, &gpu, &config, &network_parameters).await;
+
     let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.training);
 
     gpu.device.start_capture();
     run_training_step(&gpu, &resources);
     gpu.device.stop_capture();
 
-    for _ in 0..99 {
-        run_training_step(&gpu, &resources);
-    }
+    eval_performance(&data.checking, &gpu, &resources.config, &network_parameters).await;
+
+    // for _ in 0..99 {
+    //     run_training_step(&gpu, &resources);
+    // }
     
     gpu.device.poll(wgpu::MaintainBase::Wait);
 }
@@ -37,17 +41,20 @@ fn run_training_step(gpu: &GpuDeviceData, resources: &TrainingResources) {
     // Run the NN forwards on the data
     for layer in 0..config.num_layers() {
         let mut pass = commands.begin_compute_pass(&Default::default());
-        pass.set_pipeline(&shaders[layer].compute_forwards);
         pass.set_bind_group(0, &eval_resources.bind_groups[layer], &[]);
-        pass.dispatch(eval_resources.invocations, config.layers()[layer]);
+        shaders[layer].compute_forwards.setup_pass(&mut pass);
     }
 
     // Run the backpropagation steps
     for layer in (0..config.num_layers()).rev() {
         let mut pass = commands.begin_compute_pass(&Default::default());
-        pass.set_pipeline(&shaders[layer].backpropagation);
         pass.set_bind_group(0, &resources.backprop_bind_groups[layer], &[]);
-        pass.dispatch(eval_resources.invocations, config.layers()[layer]);
+        shaders[layer].backpropagation.setup_pass(&mut pass);
+    }
+    for layer in 0..config.num_layers() {
+        let mut pass = commands.begin_compute_pass(&Default::default());
+        pass.set_bind_group(0, &resources.backprop_bias_apply_bind_groups[layer], &[]);
+        shaders[layer].apply_backprop_biases.setup_pass(&mut pass);
     }
 
     // Submit everything
@@ -73,9 +80,8 @@ pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Conf
     let mut commands = gpu.device.create_command_encoder(&CommandEncoderDescriptor { label: Some("Performance evaluation") });
     for layer in 0..config.num_layers() {
         let mut pass = commands.begin_compute_pass(&Default::default());
-        pass.set_pipeline(&resources.shaders[layer].compute_forwards);
         pass.set_bind_group(0, &resources.bind_groups[layer], &[]);
-        pass.dispatch(resources.invocations, config.layers()[layer]);
+        resources.shaders[layer].compute_forwards.setup_pass(&mut pass);
     }
     let output = resources.a_buffers.read_output(gpu, &mut commands);
     gpu.queue.submit([commands.finish()]);
@@ -112,7 +118,8 @@ struct TrainingResources {
     config: Config,
     deriv_z_buffers: LayerValues,
     eval_resources: EvalResources,
-    backprop_bind_groups: Vec<BindGroup>
+    backprop_bind_groups: Vec<BindGroup>,
+    backprop_bias_apply_bind_groups: Vec<BindGroup>
 }
 
 impl TrainingResources {
@@ -158,11 +165,22 @@ impl TrainingResources {
             3 => &deriv_z_buffers.buffers[last_layer_index+1]
         }));
 
+        // Create other bind groups
+        let mut bias_apply_bind_groups = Vec::new();
+        for layer in 0..config.num_layers() {
+            bias_apply_bind_groups.push(gpu.device.create_bind_group(&bind_group! {
+                &eval_resources.shaders[layer].apply_backprop_biases.get_layout(),
+                0 => &deriv_z_buffers.buffers[layer + 1],
+                1 => &parameters[layer].biases,
+            }));
+        }
+
         Self {
             config,
             deriv_z_buffers,
             eval_resources,
             backprop_bind_groups: bind_groups,
+            backprop_bias_apply_bind_groups: bias_apply_bind_groups
         }
     }
 }
@@ -179,6 +197,8 @@ struct EvalResources {
 
 impl EvalResources {
     fn init(gpu: &GpuDeviceData, config: &Config, parameters: &WeightsAndBiases, data: &DataSet) -> Self {
+        assert!(!data.is_empty());
+
         let invocations = data.len();
         let z_buffers = LayerValues::create(gpu, config, invocations);
         let a_buffers = LayerValues::create_with_input(gpu, config, invocations, |gpu_input| {

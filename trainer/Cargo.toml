@@ -18,3 +18,4 @@ tokio-util = { version = "0.7.10", features = ["rt"] }
 futures = "0.3.30"
 bytemuck = { version = "1.16.0", features = ["derive"] }
 map-macro = "0.3.0"
+num-traits = "0.2.19"

@@ -25,7 +25,7 @@ var<storage, read> layer_z: array<MainType>;
 var<storage, read> next_layer_derivZ: array<MainType>;
 
 // The derivatives of the z function for each node in this layer.
-// This is eqal to the derivative of the bias of each node
+// This is equal to the derivative of the bias of each node
 // type: array<array<MainType, layer_size>, invocations>
 @group(0) @binding(3)
 var<storage, read_write> derivZ: array<MainType>;
@@ -33,7 +33,7 @@ var<storage, read_write> derivZ: array<MainType>;
 // This shader is used for all backpropagation steps except the first.
 // It derives (dC_0/dz) from the (dC_0/dz) values of the previous step
 // See math.md
-@compute @workgroup_size(workgroup_size.x, workgroup_size.y, workgroup_size.z)
+@compute @workgroup_size(STD_WORKGROUP_SIZE.x, STD_WORKGROUP_SIZE.y, STD_WORKGROUP_SIZE.z)
 fn backprop_from_layer(
   @builtin(global_invocation_id)
   global_id: vec3u
