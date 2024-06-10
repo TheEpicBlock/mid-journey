@@ -132,8 +132,8 @@ impl ShaderSet {
     pub fn compile(gpu: &GpuDeviceData, config: &Config, invocations: usize) -> Vec<Self> {
         // Estimate the number of computations the shader does for each possible option and take the minimum
         // (we consider only powers of two as options)
-        let workers_per_node = IterPow2::range(..invocations)
-            .filter(|n| *n < gpu.device.limits().max_compute_workgroup_size_x as usize)
+        let workers_per_node = IterPow2::range(..=invocations)
+            .filter(|n| *n <= gpu.device.limits().max_compute_workgroup_size_x as usize)
             .min_by_key(|n| (floor_div(invocations, *n) + (invocations % n) + n)).unwrap();
 
         // This shader is a little special, it has some hacks around the lack of good pipeline overridable constant support

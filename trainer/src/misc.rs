@@ -1,4 +1,4 @@
-use std::ops::{Add, Range, RangeTo};
+use std::ops::{Add, RangeToInclusive};
 
 use num_traits::One;
 use wgpu::{BufferSlice, MapMode, BufferAsyncError, Device};
@@ -89,7 +89,7 @@ impl <T> Iterator for IterPow2<T> where T: Add<Output = T> + Ord + Copy {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current >= self.target {
+        if self.current > self.target {
             return None;
         }
 
@@ -100,7 +100,7 @@ impl <T> Iterator for IterPow2<T> where T: Add<Output = T> + Ord + Copy {
 }
 
 impl<T> IterPow2<T> where T: One {
-    pub fn range(r: RangeTo<T>) -> Self {
+    pub fn range(r: RangeToInclusive<T>) -> Self {
         Self {
             current: T::one(),
             target: r.end,

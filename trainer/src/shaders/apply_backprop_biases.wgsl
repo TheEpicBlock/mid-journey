@@ -46,6 +46,7 @@ fn apply_biases(
     if (local_id.y == workers_per_node - 1) {
         iters += invocations % workers_per_node; // One worker needs to handle the remainder
     }
+    tempstorage_sum[local_id.y][local_id.x] = MainType(0);
     for (var i: u32 = 0; i < iters; i++) {
         tempstorage_sum[local_id.y][local_id.x] += derivZ[global_id.y + (local_id.x * iters + i) * layer_size];
     }
