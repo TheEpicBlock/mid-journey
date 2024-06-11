@@ -1,8 +1,9 @@
 use std::ops::Deref;
 
-use wgpu::{Buffer, BufferDescriptor, BufferUsages, CommandEncoder, Device, Features};
+use futures::{stream, try_join, StreamExt};
+use wgpu::{Buffer, BufferDescriptor, BufferUsages, CommandEncoder, CommandEncoderDescriptor, Device, Features};
 
-use crate::{gpu::GpuDeviceData, input::Config, misc::size_of};
+use crate::{gpu::GpuDeviceData, input::{Config, JsonNetworkLayer, JsonNetworkParameters}, misc::{size_of, SliceExtension}};
 
 // Should match compute_forwards.wgsl
 pub type MainType = f32;
@@ -25,16 +26,24 @@ pub struct LayerParameters {
 
 impl LayerParameters {
     pub fn create(prev_size: Size, size: Size, device: &Device) -> Self {
+        let mut usage = BufferUsages::STORAGE;
+
+        if device.features().contains(Features::MAPPABLE_PRIMARY_BUFFERS) {
+            usage |= BufferUsages::MAP_READ;
+        } else {
+            usage |= BufferUsages::COPY_SRC;
+        }
+
         let weights = device.create_buffer(&BufferDescriptor {
             label: Some("nn layer weights"),
             size: prev_size * size * size_of::<MainType>(),
-            usage: BufferUsages::STORAGE,
+            usage,
             mapped_at_creation: true
         });
         let biases = device.create_buffer(&BufferDescriptor {
             label: Some("nn layer biases"),
             size: size * size_of::<MainType>(),
-            usage: BufferUsages::STORAGE,
+            usage,
             mapped_at_creation: true
         });
         weights.slice(..).get_mapped_range_mut().iter_mut().for_each(|b| *b = 0);
@@ -48,6 +57,66 @@ impl LayerParameters {
             biases,
         }
     }
+
+    pub async fn to_json(&self, gpu: &GpuDeviceData) -> JsonNetworkLayer {
+        let weights;
+        let biases;
+
+        if gpu.device.features().contains(Features::MAPPABLE_PRIMARY_BUFFERS) {
+            weights = ReadableBuf::Primary(&self.weights);
+            biases = ReadableBuf::Primary(&self.biases);
+        } else {
+            let weight_staging = gpu.device.create_buffer(&BufferDescriptor {
+                label: Some("weight staging"),
+                size: self.weights.size(),
+                usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
+                mapped_at_creation: false
+            });
+            let bias_staging = gpu.device.create_buffer(&BufferDescriptor {
+                label: Some("bias staging"),
+                size: self.biases.size(),
+                usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
+                mapped_at_creation: false
+            });
+
+            let mut command = gpu.device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+            command.copy_buffer_to_buffer(&self.weights, 0, &weight_staging, 0, self.weights.size());
+            command.copy_buffer_to_buffer(&self.biases, 0, &bias_staging, 0, self.biases.size());
+            gpu.queue.submit([command.finish()]);
+            gpu.device.poll(wgpu::MaintainBase::Wait);
+
+            weights = ReadableBuf::Staging(weight_staging);
+            biases = ReadableBuf::Staging(bias_staging);
+        }
+
+        let weights_slice = weights.slice(..);
+        let biases_slice = biases.slice(..);
+
+        try_join!(
+            weights_slice.map_buffer(&gpu.device, wgpu::MapMode::Read),
+            biases_slice.map_buffer(&gpu.device, wgpu::MapMode::Read),
+        ).unwrap();
+
+        let weights_mapped = weights_slice.get_mapped_range();
+        let weights_copy = Vec::from(bytemuck::cast_slice(&weights_mapped));
+        let biases_mapped = biases_slice.get_mapped_range();
+        let biases_copy = Vec::from(bytemuck::cast_slice(&biases_mapped));
+
+        drop(weights_mapped);
+        drop(biases_mapped);
+
+        weights.unmap();
+        biases.unmap();
+        
+        JsonNetworkLayer {
+            weights: weights_copy,
+            biases: biases_copy,
+        }
+    }
+}
+
+pub async fn to_json(parameters: WeightsAndBiases, gpu: &GpuDeviceData) -> JsonNetworkParameters {
+    stream::iter(parameters).then(|l| async move { l.to_json(gpu).await }).collect().await
 }
 
 impl LayerValues {
@@ -72,7 +141,11 @@ impl LayerValues {
         for (i, layer) in config.layers().iter().enumerate() {
             let mut usage = BufferUsages::STORAGE;
             if i == config.layers().len()-1 {
-                usage |= BufferUsages::COPY_SRC;
+                if gpu.device.features().contains(Features::MAPPABLE_PRIMARY_BUFFERS) {
+                    usage |= BufferUsages::MAP_READ;
+                } else {
+                    usage |= BufferUsages::COPY_SRC;
+                }
             }
             buffers.push(gpu.device.create_buffer(&BufferDescriptor {
                 label: Some("nn layer values"),
@@ -88,10 +161,10 @@ impl LayerValues {
         }
     }
 
-    pub fn read_output(&self, gpu: &GpuDeviceData, encoder: &mut CommandEncoder) -> LayerOutput<'_> {
+    pub fn read_output(&self, gpu: &GpuDeviceData, encoder: &mut CommandEncoder) -> ReadableBuf<'_> {
         let output_buf = self.buffers.last().unwrap();
         if gpu.device.features().contains(Features::MAPPABLE_PRIMARY_BUFFERS) {
-            return LayerOutput::Primary(output_buf);
+            return ReadableBuf::Primary(output_buf);
         } else {
             let staging = gpu.device.create_buffer(&BufferDescriptor {
                 label: Some("nn layer staging"),
@@ -100,23 +173,23 @@ impl LayerValues {
                 mapped_at_creation: false
             });
             encoder.copy_buffer_to_buffer(output_buf, 0, &staging, 0, self.size_of_last_layer);
-            return LayerOutput::Staging(staging);
+            return ReadableBuf::Staging(staging);
         }
     }
 }
 
-pub enum LayerOutput<'a> {
+pub enum ReadableBuf<'a> {
     Primary(&'a Buffer),
     Staging(Buffer)
 }
 
-impl Deref for LayerOutput<'_> {
+impl Deref for ReadableBuf<'_> {
     type Target = Buffer;
 
     fn deref(&self) -> &Self::Target {
         match self {
-            LayerOutput::Primary(x) => x,
-            LayerOutput::Staging(x) => x,
+            ReadableBuf::Primary(x) => x,
+            ReadableBuf::Staging(x) => x,
         }
     }
 }

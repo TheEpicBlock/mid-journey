@@ -109,8 +109,6 @@ fn f(x: MainType) -> MainType {
 
 #[cfg(test)]
 mod test {
-    use num_traits::Pow;
-
     use crate::{color::Color, layer::MainType};
 
     #[test]

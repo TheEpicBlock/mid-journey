@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::layer::{MainType, Size};
 
@@ -43,4 +43,12 @@ impl Config {
     pub fn num_layers(&self) -> usize {
         self.layers.len()
     }
+}
+
+pub type JsonNetworkParameters = Vec<JsonNetworkLayer>;
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonNetworkLayer {
+    pub weights: Vec<MainType>,
+    pub biases: Vec<MainType>,
 }

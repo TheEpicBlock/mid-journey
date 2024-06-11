@@ -1,11 +1,9 @@
 
 use wgpu::{BindGroup, BufferDescriptor, BufferUsages, CommandEncoderDescriptor};
 
-use crate::{color::Color, gpu::{init_gpu, GpuDeviceData}, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, training_data::{DataSet, TrainingData}};
+use crate::{color::Color, gpu::GpuDeviceData, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, training_data::{DataSet, TrainingData}};
 
-pub async fn start_training(data: TrainingData, config: Config) {
-    let gpu = init_gpu().await;
-
+pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -> WeightsAndBiases {
     // Init buffers for weights and biases
     let mut network_parameters = Vec::<LayerParameters>::default();
     for layer in config.layers() {
@@ -16,19 +14,21 @@ pub async fn start_training(data: TrainingData, config: Config) {
 
     eval_performance(&data.training, &gpu, &config, &network_parameters).await;
 
-    let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.training);
+    let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.checking);
 
     gpu.device.start_capture();
     run_training_step(&gpu, &resources);
     gpu.device.stop_capture();
 
-    eval_performance(&data.training, &gpu, &resources.config, &network_parameters).await;
+    for _ in 0..500 {
+        run_training_step(&gpu, &resources);
+    }
 
-    // for _ in 0..99 {
-    //     run_training_step(&gpu, &resources);
-    // }
-    
+    eval_performance(&data.checking, &gpu, &resources.config, &network_parameters).await;
+
     gpu.device.poll(wgpu::MaintainBase::Wait);
+
+    return network_parameters;
 }
 
 fn run_training_step(gpu: &GpuDeviceData, resources: &TrainingResources) {

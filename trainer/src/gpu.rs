@@ -1,4 +1,4 @@
-use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
+use wgpu::{Adapter, Device, DeviceDescriptor, DeviceType, Features, Queue};
 
 use crate::shaders::ShaderComponents;
 
@@ -11,7 +11,13 @@ pub struct GpuDeviceData {
 pub async fn init_gpu() -> GpuDeviceData {
     let adapter = init_adapter().await;
     println!("Using gpu adapter: {:?}", adapter.get_info());
-    let (device, queue) = adapter.request_device(&DeviceDescriptor::default(), None).await.expect("Failed to open GPU");
+
+    let mut desc = DeviceDescriptor::default();
+    let device = adapter.get_info().device_type;
+    if device == DeviceType::Cpu || device == DeviceType::IntegratedGpu {
+        desc.required_features |= Features::MAPPABLE_PRIMARY_BUFFERS;
+    }
+    let (device, queue) = adapter.request_device(&desc, None).await.expect("Failed to open GPU");
 
     let shader_components = ShaderComponents::init(&device);
 
