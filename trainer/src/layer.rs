@@ -25,7 +25,22 @@ pub struct LayerParameters {
 }
 
 impl LayerParameters {
+    pub fn load(prev_size: Size, size: Size, device: &Device, json: &JsonNetworkLayer) -> Self {
+        Self::create_inner(prev_size, size, device, |weights, biases| {
+            weights.copy_from_slice(bytemuck::cast_slice(&json.weights));
+            biases.copy_from_slice(bytemuck::cast_slice(&json.biases));
+        })
+    }
+
     pub fn create(prev_size: Size, size: Size, device: &Device) -> Self {
+        Self::create_inner(prev_size, size, device, |weights, biases| {
+            weights.fill(0);
+            biases.fill(0);
+        })
+    }
+
+    fn create_inner<F>(prev_size: Size, size: Size, device: &Device, init: F) -> Self
+            where F: FnOnce(&mut [u8], &mut [u8]) {
         let mut usage = BufferUsages::STORAGE;
 
         if device.features().contains(Features::MAPPABLE_PRIMARY_BUFFERS) {
@@ -46,8 +61,8 @@ impl LayerParameters {
             usage,
             mapped_at_creation: true
         });
-        weights.slice(..).get_mapped_range_mut().iter_mut().for_each(|b| *b = 0);
-        biases.slice(..).get_mapped_range_mut().iter_mut().for_each(|b| *b = 0);
+
+        init(&mut weights.slice(..).get_mapped_range_mut(), &mut biases.slice(..).get_mapped_range_mut());
 
         weights.unmap();
         biases.unmap();
@@ -119,6 +134,14 @@ pub async fn to_json(parameters: WeightsAndBiases, gpu: &GpuDeviceData) -> JsonN
     stream::iter(parameters).then(|l| async move { l.to_json(gpu).await }).collect().await
 }
 
+pub fn from_json(parameters: &JsonNetworkParameters, config: &Config, gpu: &GpuDeviceData) -> WeightsAndBiases {
+    let mut output = WeightsAndBiases::default();
+    for (i, layer) in config.layers().iter().enumerate() {
+        output.push(LayerParameters::load(layer.previous_size, layer.size, &gpu.device, &parameters[i]));
+    }
+    return output;
+}
+
 impl LayerValues {
     pub fn create(gpu: &GpuDeviceData, config: &Config, invocations: usize) -> Self {
         LayerValues::create_with_input(gpu, config, invocations, |_|{})
@@ -131,7 +154,7 @@ impl LayerValues {
         let input_buf = gpu.device.create_buffer(&BufferDescriptor {
             label: Some("nn layer inputs"),
             size: config.input_length * invocations as u64 * size_of::<MainType>(),
-            usage: BufferUsages::STORAGE,
+            usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
             mapped_at_creation: true
         });
         initializer(&mut input_buf.slice(..).get_mapped_range_mut());

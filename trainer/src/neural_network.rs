@@ -1,7 +1,7 @@
 
 use wgpu::{BindGroup, BufferDescriptor, BufferUsages, CommandEncoderDescriptor};
 
-use crate::{color::Color, gpu::GpuDeviceData, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, training_data::{DataSet, TrainingData}};
+use crate::{color::Color, gpu::GpuDeviceData, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, training_data::{string_to_data, DataSet, TrainingData}};
 
 pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -> WeightsAndBiases {
     // Init buffers for weights and biases
@@ -72,6 +72,33 @@ pub fn calc_cost(expected: Color, actual: Color) -> MainType {
     let da = actual.a - expected.a;
     let db = actual.b - expected.b;
     return dl * dl + da * da + db * db;
+}
+
+pub async fn eval_single(data: &str, gpu: &GpuDeviceData, config: &Config, resources: &EvalResources, parameters: &WeightsAndBiases) -> Color {
+    let data = string_to_data(data, config);
+    let input = resources.a_buffers.buffers.first().unwrap();
+    gpu.queue.write_buffer(input, 0, bytemuck::cast_slice(&data));
+
+    // Run the NN forwards on the data
+    let mut commands = gpu.device.create_command_encoder(&CommandEncoderDescriptor { label: Some("Performance evaluation") });
+    for layer in 0..config.num_layers() {
+        let mut pass = commands.begin_compute_pass(&Default::default());
+        pass.set_bind_group(0, &resources.bind_groups[layer], &[]);
+        resources.shaders[layer].compute_forwards.setup_pass(&mut pass);
+    }
+    let output = resources.a_buffers.read_output(gpu, &mut commands);
+    gpu.queue.submit([commands.finish()]);
+
+    let output_color;
+    let output_buf = &output;
+    {
+        output_buf.slice(..).map_buffer(&gpu.device, wgpu::MapMode::Read).await.unwrap();
+        let outputs = output_buf.slice(..).get_mapped_range();
+        let outputs: &[Color] = bytemuck::cast_slice(&outputs);
+        output_color = outputs[0];
+    }
+    output_buf.unmap();
+    return output_color;
 }
 
 pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Config, parameters: &WeightsAndBiases) {
@@ -203,7 +230,7 @@ impl TrainingResources {
 }
 
 /// Resources used during evaluations
-struct EvalResources {
+pub struct EvalResources {
     invocations: usize,
     a_buffers: LayerValues,
     z_buffers: LayerValues,
@@ -213,7 +240,7 @@ struct EvalResources {
 }
 
 impl EvalResources {
-    fn init(gpu: &GpuDeviceData, config: &Config, parameters: &WeightsAndBiases, data: &DataSet) -> Self {
+    pub fn init(gpu: &GpuDeviceData, config: &Config, parameters: &WeightsAndBiases, data: &DataSet) -> Self {
         assert!(!data.is_empty());
 
         let invocations = data.len();

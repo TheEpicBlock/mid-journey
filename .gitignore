@@ -1,6 +1,5 @@
 # Rust
-/trainer/target/
-/nn_cli/target/
+/target/
 
 # gradle
 

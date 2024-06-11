@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use wgpu::{core::device, BindGroupLayout, CommandEncoder, ComputePass, ComputePipeline, ComputePipelineDescriptor, Device, PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModule};
+use wgpu::{BindGroupLayout, ComputePass, ComputePipeline, Device, PipelineCompilationOptions, PipelineLayoutDescriptor, ShaderModule};
 
 use map_macro::hash_map;
 
