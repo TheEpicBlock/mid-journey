@@ -53,6 +53,6 @@ pub fn string_to_data(str: &str, config: &Config) -> GpuInputData {
 }
 
 fn convert_char(char: char, config: &Config) -> MainType {
-    let char = char.to_ascii_lowercase();
+    let char = char.to_ascii_uppercase();
     return *config.letter_mapping.get(&char).unwrap_or(&(0 as MainType));
 }
