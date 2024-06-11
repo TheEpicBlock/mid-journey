@@ -50,25 +50,35 @@ impl Color {
         let m = m.cbrt();
         let s = s.cbrt();
 
-        return Self {
-            l: 0.2104542553*l + 0.7936177850*m - 0.0040720468*s,
-            a: 1.9779984951*l - 2.4285922050*m + 0.4505937099*s,
-            b: 0.0259040371*l + 0.7827717662*m - 0.8086757660*s,
-        };
+        return Self::from_oklab((
+            0.2104542553*l + 0.7936177850*m - 0.0040720468*s,
+            1.9779984951*l - 2.4285922050*m + 0.4505937099*s,
+            0.0259040371*l + 0.7827717662*m - 0.8086757660*s,
+        ));
     }
 
     pub fn from_oklab(oklab: (MainType, MainType, MainType)) -> Self {
         Self {
             l: oklab.0,
-            a: oklab.1,
-            b: oklab.2
+            a: oklab.1 / 0.4,
+            b: oklab.2 / 0.4
         }
     }
 
+    pub fn to_oklab(&self) -> (MainType, MainType, MainType) {
+        return (
+            self.l,
+            self.a * 0.4,
+            self.b * 0.4,
+        );
+    }
+
     pub fn to_linear_srgb(&self) -> (MainType, MainType, MainType) {
-        let l = self.l + 0.3963377774 * self.a + 0.2158037573 * self.b;
-        let m = self.l - 0.1055613458 * self.a - 0.0638541728 * self.b;
-        let s = self.l - 0.0894841775 * self.a - 1.2914855480 * self.b;
+        let oklab = self.to_oklab();
+
+        let l = oklab.0 + 0.3963377774 * oklab.1 + 0.2158037573 * oklab.2;
+        let m = oklab.0 - 0.1055613458 * oklab.1 - 0.0638541728 * oklab.2;
+        let s = oklab.0 - 0.0894841775 * oklab.1 - 1.2914855480 * oklab.2;
 
         let l = l*l*l;
         let m = m*m*m;
@@ -124,7 +134,7 @@ mod test {
         let oklab = Color::from_oklab(oklab);
 
         let oklab_converted = Color::from_rgb(rgb);
-        assert!(cdist(oklab_converted, oklab) < 0.001, "Expected {oklab:?}, found {oklab_converted:?}");
+        assert!(cdist(oklab_converted, oklab) < 0.002, "Expected {oklab:?}, found {oklab_converted:?}");
 
         let rgb_converted = oklab.to_rgb();
         assert!(dist(rgb_converted, rgb) < 0.03, "Expected {rgb:?}, found {rgb_converted:?}");

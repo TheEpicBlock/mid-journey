@@ -34,8 +34,10 @@ impl LayerParameters {
 
     pub fn create(prev_size: Size, size: Size, device: &Device) -> Self {
         Self::create_inner(prev_size, size, device, |weights, biases| {
-            weights.fill(0);
             biases.fill(0);
+            bytemuck::cast_slice_mut(weights).iter_mut().for_each(
+                |c: &mut MainType| *c = rand::random()
+            );
         })
     }
 

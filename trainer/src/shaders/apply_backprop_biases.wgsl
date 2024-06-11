@@ -61,6 +61,6 @@ fn apply_biases(
         for (var i: u32 = 0; i < workers_per_node; i++) {
             sum += tempstorage_sum[local_id.y][i];
         }
-        biases[global_id.y] -= sum / MainType(invocations);
+        biases[global_id.y] -= (learning_rate * sum) / MainType(invocations);
     }
 }
