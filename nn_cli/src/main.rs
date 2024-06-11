@@ -66,7 +66,7 @@ async fn main() {
 
     let mut update = |buf: &str, buf_position: usize| {
         queue!(stdout, cursor::MoveTo(1, bottom_row-1)).unwrap();
-        for _ in 0..32 {
+        for _ in 0..config.input_length {
             queue!(stdout, style::Print(" ")).unwrap();
         }
         queue!(stdout, cursor::MoveTo(1, bottom_row-1)).unwrap();

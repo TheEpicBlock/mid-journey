@@ -14,17 +14,17 @@ pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -
 
     eval_performance(&data.training, &gpu, &config, &network_parameters).await;
 
-    let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.checking);
+    let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.training);
 
-    gpu.device.start_capture();
-    run_training_step(&gpu, &resources);
-    gpu.device.stop_capture();
+    for _ in 0..50 {
+        for _ in 0..500 {
+            run_training_step(&gpu, &resources);
+        }
+    
+        gpu.device.poll(wgpu::MaintainBase::Wait);
 
-    for _ in 0..500 {
-        run_training_step(&gpu, &resources);
+        eval_performance(&data.training, &gpu, &resources.config, &network_parameters).await;
     }
-
-    eval_performance(&data.checking, &gpu, &resources.config, &network_parameters).await;
 
     gpu.device.poll(wgpu::MaintainBase::Wait);
 
@@ -71,7 +71,7 @@ pub fn calc_cost(expected: Color, actual: Color) -> MainType {
     let dl = actual.l - expected.l;
     let da = actual.a - expected.a;
     let db = actual.b - expected.b;
-    return dl * dl + da * da + db * db;
+    return (dl * dl + da * da + db * db).sqrt();
 }
 
 pub async fn eval_single(data: &str, gpu: &GpuDeviceData, config: &Config, resources: &EvalResources, parameters: &WeightsAndBiases) -> Color {
@@ -124,6 +124,9 @@ pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Conf
     let mut count = 0;
     let mut min = MainType::MAX;
     let mut max = MainType::MIN;
+    let white = Color::from_rgb((0.0, 0.0, 0.0));
+    let mut vmin = MainType::MAX;
+    let mut vmax = MainType::MIN;
     
     let output_buf = &output;
     {
@@ -138,12 +141,15 @@ pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Conf
                 count += 1;
                 min = min.min(cost);
                 max = max.max(cost);
+                let variance = calc_cost(white, *nn_output);
+                vmin = vmin.min(variance);
+                vmax = vmax.max(variance);
             });
     }
     output_buf.unmap();
     assert_eq!(count, data.len());
 
-    println!("Tested on {} datapoints. min/avg/max = ({}, {}, {})", count, min, total_cost / (count as f64), max);
+    println!("Tested on {} datapoints. min/avg/max vmin/vmax = ({}, {}, {}) ({}, {})", count, min, total_cost / (count as f64), max, vmin, vmax);
 }
 
 /// Resources used during training. Superset of resources used during evals.

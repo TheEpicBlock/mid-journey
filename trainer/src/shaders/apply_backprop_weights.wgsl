@@ -15,7 +15,7 @@ override invocations: u32;
 const workers_per_node: u32 = ${workers_per_node};
 
 // The activations of the previous layer
-// type: array<array<MainType, input_size>, invocations>
+// type: array<array<MainType, previous_layer_size>, invocations>
 @group(0) @binding(0)
 var<storage, read> previous_layer_a: array<MainType>;
 // The derivatives of the z function for each node in the layer that the weights connect to.
@@ -62,7 +62,7 @@ fn apply_weights(
         // Unlike the bias, which is already computed, we need to do a little extra multiplication
         // to get the derivative of the weight
         // Like explained in math.md, derivW is equal to the activation times derivZ
-        let derivative = next_derivZ[global_id.z + invocation_index * layer_size];
+        let derivative = previous_layer_a[global_id.y + invocation_index * previous_layer_size] * next_derivZ[global_id.z + invocation_index * layer_size];
         // Add it to the sum so we can average out the iterations.
         tempstorage_sum[local_id.z][local_id.y][local_id.x] += derivative;
     }
