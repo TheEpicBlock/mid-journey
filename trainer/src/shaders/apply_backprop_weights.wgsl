@@ -58,7 +58,7 @@ fn apply_weights(
     
     tempstorage_sum[local_id.z][local_id.y][local_id.x] = MainType(0);
     for (var i: u32 = 0; i < iters; i++) {
-        let invocation_index = (local_id.x * iters + i);
+        let invocation_index = (local_id.x * (invocations / workers_per_node) + i);
         // Unlike the bias, which is already computed, we need to do a little extra multiplication
         // to get the derivative of the weight
         // Like explained in math.md, derivW is equal to the activation times derivZ

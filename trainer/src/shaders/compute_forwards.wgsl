@@ -47,7 +47,7 @@ fn compute_forwards(
     
     for (var i: u32 = 0; i < input_size; i++) {
         // The weight from the node in the previous layer to the node we're calculating
-        let weight = weights[global_id.y + i * input_size];
+        let weight = weights[i + global_id.y * input_size];
         let input_activation = input_a[i + global_id.x * input_size];
         output += input_activation * weight;
     }

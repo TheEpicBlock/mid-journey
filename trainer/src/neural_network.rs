@@ -71,7 +71,7 @@ pub fn calc_cost(expected: Color, actual: Color) -> MainType {
     let dl = actual.l - expected.l;
     let da = actual.a - expected.a;
     let db = actual.b - expected.b;
-    return (dl * dl + da * da + db * db).sqrt();
+    return (dl * dl + da * da + db * db) / 3.0;
 }
 
 pub async fn eval_single(data: &str, gpu: &GpuDeviceData, config: &Config, resources: &EvalResources, parameters: &WeightsAndBiases) -> Color {

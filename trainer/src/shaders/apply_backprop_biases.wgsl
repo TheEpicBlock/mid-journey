@@ -48,7 +48,7 @@ fn apply_biases(
     }
     tempstorage_sum[local_id.y][local_id.x] = MainType(0);
     for (var i: u32 = 0; i < iters; i++) {
-        let invocation_index = (local_id.x * iters + i);
+        let invocation_index = (local_id.x * (invocations / workers_per_node) + i);
         tempstorage_sum[local_id.y][local_id.x] += derivZ[global_id.y + invocation_index * layer_size];
     }
 
