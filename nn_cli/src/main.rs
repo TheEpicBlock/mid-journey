@@ -82,7 +82,9 @@ async fn main() {
             b: (c.to_rgb().2 * 255.0) as u8
         }))).unwrap();
         queue!(stdout, cursor::MoveTo(0, bottom_row-4)).unwrap();
-        write!(stdout, "{:.3} {:.3} {:.3}", c.l, c.a, c.b).unwrap();
+        write!(stdout, "                               ").unwrap();
+        queue!(stdout, cursor::MoveTo(0, bottom_row-4)).unwrap();
+        write!(stdout, "{:.3} {:.3} {:.3} {}", c.l, c.a, c.b, c.to_hex()).unwrap();
         queue!(stdout, cursor::MoveTo(1 + buf_position as u16, bottom_row-1)).unwrap();
         stdout.flush().unwrap();
     };

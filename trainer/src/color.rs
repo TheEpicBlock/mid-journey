@@ -95,6 +95,15 @@ impl Color {
         let linear_srgb = self.to_linear_srgb();
         return (f(linear_srgb.0), f(linear_srgb.1), f(linear_srgb.2));
     }
+
+    pub fn to_hex(&self) -> String {
+        let rgb = self.to_rgb();
+        LibColor::new_rgb(
+            (rgb.0 * 255.0) as u8,
+            (rgb.0 * 255.0) as u8,
+            (rgb.0 * 255.0) as u8
+        ).to_hex_string()
+    }
 }
 
 fn srgb_to_linear_srgb(rgb: (MainType, MainType, MainType)) -> (MainType, MainType, MainType) {
