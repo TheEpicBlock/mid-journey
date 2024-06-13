@@ -74,17 +74,19 @@ async fn main() {
         stdout.flush().unwrap();
 
         let c = executor::block_on(eval_single(&buf, &gpu, &config, &eval_resources, &parameters));
+        let rgb = c.to_rgb();
+        let oklab = c.to_oklab();
 
         queue!(stdout, cursor::MoveTo(0, bottom_row-3)).unwrap();
         queue!(stdout, style::PrintStyledContent(top_bar.with(style::Color::Rgb {
-            r: (c.to_rgb().0 * 255.0) as u8,
-            g: (c.to_rgb().1 * 255.0) as u8,
-            b: (c.to_rgb().2 * 255.0) as u8
+            r: (rgb.0 * 255.0) as u8,
+            g: (rgb.1 * 255.0) as u8,
+            b: (rgb.2 * 255.0) as u8
         }))).unwrap();
         queue!(stdout, cursor::MoveTo(0, bottom_row-4)).unwrap();
         write!(stdout, "                               ").unwrap();
         queue!(stdout, cursor::MoveTo(0, bottom_row-4)).unwrap();
-        write!(stdout, "{:.3} {:.3} {:.3} {}", c.l, c.a, c.b, c.to_hex()).unwrap();
+        write!(stdout, "{:.3} {:.3} {:.3} {}", oklab.0, oklab.1, oklab.2, c.to_hex()).unwrap();
         queue!(stdout, cursor::MoveTo(1 + buf_position as u16, bottom_row-1)).unwrap();
         stdout.flush().unwrap();
     };

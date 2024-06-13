@@ -100,8 +100,8 @@ impl Color {
         let rgb = self.to_rgb();
         LibColor::new_rgb(
             (rgb.0 * 255.0) as u8,
-            (rgb.0 * 255.0) as u8,
-            (rgb.0 * 255.0) as u8
+            (rgb.1 * 255.0) as u8,
+            (rgb.2 * 255.0) as u8
         ).to_hex_string()
     }
 }
