@@ -155,7 +155,7 @@ impl LayerValues {
 
         let input_buf = gpu.device.create_buffer(&BufferDescriptor {
             label: Some("nn layer inputs"),
-            size: config.input_length * invocations as u64 * size_of::<MainType>(),
+            size: config.input_length() * invocations as u64 * size_of::<MainType>(),
             usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
             mapped_at_creation: true
         });

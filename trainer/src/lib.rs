@@ -12,3 +12,4 @@ pub mod layer;
 pub mod gpu;
 #[allow(dead_code)]
 pub mod color;
+pub mod string;

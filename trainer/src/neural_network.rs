@@ -1,7 +1,7 @@
 
 use wgpu::{BindGroup, BufferDescriptor, BufferUsages, CommandEncoderDescriptor};
 
-use crate::{color::Color, gpu::GpuDeviceData, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, training_data::{string_to_data, DataSet, TrainingData}};
+use crate::{color::Color, gpu::GpuDeviceData, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, string::string_to_data, training_data::{DataSet, TrainingData}};
 
 pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -> WeightsAndBiases {
     // Init buffers for weights and biases
@@ -16,7 +16,7 @@ pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -
 
     let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.training);
 
-    for _ in 0..50 {
+    for _ in 0..10 {
         for _ in 0..500 {
             run_training_step(&gpu, &resources);
         }
@@ -25,6 +25,10 @@ pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -
 
         eval_performance(&data.training, &gpu, &resources.config, &network_parameters).await;
     }
+    gpu.device.poll(wgpu::MaintainBase::Wait);
+    gpu.device.start_capture();
+    run_training_step(&gpu, &resources);
+    gpu.device.stop_capture();
 
     gpu.device.poll(wgpu::MaintainBase::Wait);
 
@@ -74,7 +78,7 @@ pub fn calc_cost(expected: Color, actual: Color) -> MainType {
     return (dl * dl + da * da + db * db) / 3.0;
 }
 
-pub async fn eval_single(data: &str, gpu: &GpuDeviceData, config: &Config, resources: &EvalResources, parameters: &WeightsAndBiases) -> Color {
+pub async fn eval_single(data: &str, gpu: &GpuDeviceData, config: &Config, resources: &EvalResources) -> Color {
     let data = string_to_data(data, config);
     let input = resources.a_buffers.buffers.first().unwrap();
     gpu.queue.write_buffer(input, 0, bytemuck::cast_slice(&data));
@@ -254,7 +258,7 @@ impl EvalResources {
         let a_buffers = LayerValues::create_with_input(gpu, config, invocations, |gpu_input| {
             Iterator::zip(
                 data.iter().map(|data| &data.0),
-                bytemuck::cast_slice_mut::<_, MainType>(gpu_input).chunks_exact_mut(config.input_length as usize)
+                bytemuck::cast_slice_mut::<_, MainType>(gpu_input).chunks_exact_mut(config.input_length() as usize)
             ).for_each(|(input_data, gpu_value)| {
                 gpu_value.copy_from_slice(input_data);
             });

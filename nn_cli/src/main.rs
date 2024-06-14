@@ -25,14 +25,14 @@ async fn main() {
 
     let gpu = init_gpu().await;
     let parameters = layer::from_json(&parameters, &config, &gpu);
-    let eval_resources = EvalResources::init(&gpu, &config, &parameters, &vec![(vec![0.0; config.input_length as usize], Color::from_oklab((0.0,0.0,0.0)))]);
+    let eval_resources = EvalResources::init(&gpu, &config, &parameters, &vec![(vec![0.0; config.input_length() as usize], Color::from_oklab((0.0,0.0,0.0)))]);
 
 
     // Setup the box™
     println!();
     let mut top_bar = String::new();
     top_bar += " [";
-    for _ in 0..((config.input_length-2).max(0)) {
+    for _ in 0..((config.input_length_max_chars()-2).max(0)) {
         top_bar += "█";
     }
     top_bar += "]";
@@ -40,17 +40,17 @@ async fn main() {
     let top_bar: &str = &top_bar;
 
     print!("╔");
-    for _ in 0..config.input_length {
+    for _ in 0..config.input_length_max_chars() {
         print!("═");
     }
     println!("╗");
     print!("║");
-    for _ in 0..config.input_length {
+    for _ in 0..config.input_length_max_chars() {
         print!(" ");
     }
     println!("║");
     print!("╚");
-    for _ in 0..config.input_length {
+    for _ in 0..config.input_length_max_chars() {
         print!("═");
     }
     print!("╝");
@@ -66,14 +66,14 @@ async fn main() {
 
     let mut update = |buf: &str, buf_position: usize| {
         queue!(stdout, cursor::MoveTo(1, bottom_row-1)).unwrap();
-        for _ in 0..config.input_length {
+        for _ in 0..config.input_length_max_chars() {
             queue!(stdout, style::Print(" ")).unwrap();
         }
         queue!(stdout, cursor::MoveTo(1, bottom_row-1)).unwrap();
         queue!(stdout, style::Print(&buf)).unwrap();
         stdout.flush().unwrap();
 
-        let c = executor::block_on(eval_single(&buf, &gpu, &config, &eval_resources, &parameters));
+        let c = executor::block_on(eval_single(&buf, &gpu, &config, &eval_resources));
         let rgb = c.to_rgb();
         let oklab = c.to_oklab();
 
@@ -116,12 +116,12 @@ async fn main() {
                             }
                         }
                         input_buffer.insert(buf_position, c);
-                        input_buffer.truncate(config.input_length as usize);
+                        input_buffer.truncate(config.input_length_max_chars() as usize);
                         buf_position += 1;
                         buf_position = buf_position.min(input_buffer.len());
                     }
                     event::KeyCode::Left => {
-                        buf_position -= 1;
+                        buf_position = buf_position.saturating_sub(1);
                         buf_position = buf_position.max(0);
                     }
                     event::KeyCode::Right => {
@@ -134,7 +134,7 @@ async fn main() {
             },
             Event::Paste(str) => {
                 input_buffer.insert_str(buf_position, &str);
-                input_buffer.truncate(config.input_length as usize);
+                input_buffer.truncate(config.input_length_max_chars() as usize);
                 buf_position += str.len();
                 buf_position = buf_position.min(input_buffer.len());
                 update(&input_buffer, buf_position);

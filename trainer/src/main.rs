@@ -14,6 +14,7 @@ mod layer;
 mod gpu;
 #[allow(dead_code)]
 mod color;
+mod string;
 
 #[tokio::main]
 async fn main() {
@@ -30,13 +31,13 @@ async fn main() {
     let data: TrainingDataRaw = serde_json::from_reader(File::open(training_data_file).expect("Can't open training data file")).unwrap();
     let config: Config = serde_json::from_reader(File::open(config_file).expect("Can't open training data file")).unwrap();
 
-    let (data, cut_data) = process_data(data, &config);
+    let (data, truncated_data) = process_data(data, &config);
 
     println!("Starting trainig process!");
     println!("Training set contains {} entries", data.training.len());
     println!("Check/verify set contains {} entries", data.checking.len());
     println!("Total: {} entries", data.training.len() + data.checking.len());
-    println!("Configured to cut off colours to {} characters. This means we cut {} entries", config.input_length, cut_data);
+    println!("{} entries were truncated due to configured input size", truncated_data);
 
     let gpu = init_gpu().await;
     let parameters = train_nn(&gpu, data, config).await;

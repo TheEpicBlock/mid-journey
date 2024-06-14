@@ -8,10 +8,9 @@ pub type TrainingDataRaw = BTreeMap<String, String>;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub input_length: Size,
+    input_length: Size,
     pub percentage_training: f64,
     layers: Vec<Size>,
-    pub letter_mapping: HashMap<char, MainType>,
 }
 
 #[derive(Clone, Copy)]
@@ -29,7 +28,7 @@ impl Config {
 
         for (i, layer_size) in self.layers.iter().copied().enumerate() {
             output.push(LayerConfig {
-                previous_size: if i == 0 { self.input_length } else { self.layers[i-1] },
+                previous_size: if i == 0 { self.input_length() } else { self.layers[i-1] },
                 size: layer_size,
                 next_size: self.layers.get(i + 1).copied()
             });
@@ -42,6 +41,14 @@ impl Config {
     /// Does not count the input layer, but does counts the output layer.
     pub fn num_layers(&self) -> usize {
         self.layers.len()
+    }
+
+    pub fn input_length(&self) -> Size {
+        return crate::string::get_input_size(self.input_length);
+    }
+
+    pub fn input_length_max_chars(&self) -> Size {
+        return self.input_length;
     }
 }
 
