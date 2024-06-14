@@ -60,16 +60,16 @@ impl Color {
     pub fn from_oklab(oklab: (MainType, MainType, MainType)) -> Self {
         Self {
             l: oklab.0,
-            a: oklab.1 / 0.4,
-            b: oklab.2 / 0.4
+            a: (oklab.1 + 0.4) / 0.8,
+            b: (oklab.2 + 0.4) / 0.8
         }
     }
 
     pub fn to_oklab(&self) -> (MainType, MainType, MainType) {
         return (
             self.l,
-            self.a * 0.4,
-            self.b * 0.4,
+            (self.a * 0.8) - 0.4,
+            (self.b * 0.8) - 0.4,
         );
     }
 
