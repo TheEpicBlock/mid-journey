@@ -1,10 +1,14 @@
+import nl.theepicblock.mid.journey.build.CargoBuild
 import nl.theepicblock.mid.journey.build.FetchWikipedia
 import nl.theepicblock.mid.journey.build.ParseWikipedia
+import nl.theepicblock.mid.journey.build.RunCli
+import nl.theepicblock.mid.journey.build.RunTrainer
 import nl.theepicblock.mid.journey.build.Uncomment
 
 plugins {
 	id 'fabric-loom' version '1.6-SNAPSHOT'
 	id 'maven-publish'
+	id "com.dorongold.task-tree" version "2.1.1"
 }
 
 version = project.mod_version
@@ -41,10 +45,19 @@ tasks.register("fetch_A_F", FetchWikipedia) {
 	revision = "1224761126"
 	output = layout.buildDirectory.file('trainingData/source/A-F.wikitext')
 }
-
+tasks.register("fetch_G_M", FetchWikipedia) {
+	revision = "1218789529"
+	output = layout.buildDirectory.file('trainingData/source/G-M.wikitext')
+}
+tasks.register("fetch_N_Z", FetchWikipedia) {
+	revision = "1214503723"
+	output = layout.buildDirectory.file('trainingData/source/N-Z.wikitext')
+}
 
 tasks.register("parse_trainingdata", ParseWikipedia) {
 	input.add(tasks.named("fetch_A_F").get().output)
+	input.add(tasks.named("fetch_G_M").get().output)
+	input.add(tasks.named("fetch_N_Z").get().output)
 	output = layout.buildDirectory.file("trainingData/data.json")
 }
 
@@ -53,9 +66,31 @@ tasks.register("nn_config", Uncomment) {
 	output = layout.buildDirectory.file("trainingData/nn_config.json")
 }
 
-////////////////////////////////
-// End of custom build script //
-////////////////////////////////
+tasks.register("build_trainer", CargoBuild) {
+	crateRoot = layout.projectDirectory.dir("trainer")
+	output = layout.buildDirectory.dir("cargo/trainer")
+}
+
+tasks.register("build_cli", CargoBuild) {
+	crateRoot = layout.projectDirectory.dir("nn_cli")
+	output = layout.buildDirectory.dir("cargo/cli")
+}
+
+var nn_config = layout.projectDirectory.file("nn_config.json")
+
+tasks.register("train_network", RunTrainer) {
+	binary = tasks.named("build_trainer").get().output
+	config = nn_config
+	trainingData = tasks.named("parse_trainingdata").get().output
+	output = layout.buildDirectory.file("network_parameters.json");
+}
+
+tasks.register("run_network_cli", RunCli) {
+	binary = tasks.named("build_cli").get().output
+	config = nn_config
+	network = tasks.named("train_network").get().output
+	output = layout.buildDirectory.dir("cli");
+}
 
 processResources {
 	inputs.property "version", project.version
@@ -63,7 +98,14 @@ processResources {
 	filesMatching("fabric.mod.json") {
 		expand "version": project.version
 	}
+
+	// Includes the neural network inside of the jar
+	from(tasks.named("train_network").get().output)
 }
+
+////////////////////////////////
+// End of custom build script //
+////////////////////////////////
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21

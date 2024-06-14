@@ -30,10 +30,10 @@ pub fn string_to_data(str: &str, config: &Config) -> GpuInputData {
 fn char_to_num(c: char) -> Option<usize> {
     let char = c.to_ascii_lowercase();
     if !char.is_whitespace() {
-        if char.is_alphabetic() {
+        if char.is_ascii() && char.is_alphabetic() {
             Some((char as u8 - 'a' as u8) as usize)
         } else {
-            Some(27)
+            Some(26)
         }
     } else {
         None
