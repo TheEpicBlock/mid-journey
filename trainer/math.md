@@ -10,7 +10,7 @@ Then, the activation is defined by plugging $z$ into an activation function.
 ```math
 a^{(L)}_i = \sigma(z^{(L)}_i)
 ```
-Anything from [this page](https://en.wikipedia.org/wiki/Activation_function) will do (except the identity). I chose the logistic function because 3b1b mentioned that one first and it seemed pretty neat to me. Some of those activation functions are better suited for certain tasks or something.
+Anything from [this page](https://en.wikipedia.org/wiki/Activation_function) will do (except the identity). I'm using a slightly Leaky ReLu and it seems to be working well.
 
 <details>
 <summary>Quick aside on what our input/outputs mean</summary>
