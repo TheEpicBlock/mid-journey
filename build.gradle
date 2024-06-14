@@ -76,18 +76,16 @@ tasks.register("build_cli", CargoBuild) {
 	output = layout.buildDirectory.dir("cargo/cli")
 }
 
-var nn_config = layout.projectDirectory.file("nn_config.json")
-
 tasks.register("train_network", RunTrainer) {
 	binary = tasks.named("build_trainer").get().output
-	config = nn_config
+	config = tasks.named("nn_config").get().output
 	trainingData = tasks.named("parse_trainingdata").get().output
 	output = layout.buildDirectory.file("network_parameters.json");
 }
 
 tasks.register("run_network_cli", RunCli) {
 	binary = tasks.named("build_cli").get().output
-	config = nn_config
+	config = tasks.named("nn_config").get().output
 	network = tasks.named("train_network").get().output
 	output = layout.buildDirectory.dir("cli");
 }

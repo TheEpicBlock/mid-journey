@@ -1,4 +1,6 @@
 
+use std::fmt::Display;
+
 use wgpu::{BindGroup, BufferDescriptor, BufferUsages, CommandEncoderDescriptor};
 
 use crate::{color::Color, gpu::GpuDeviceData, input::Config, layer::{LayerParameters, LayerValues, MainType, WeightsAndBiases}, misc::{bind_group, size_of, SliceExtension}, shaders::ShaderSet, string::string_to_data, training_data::{DataSet, TrainingData}};
@@ -9,28 +11,54 @@ pub async fn train_nn(gpu: &GpuDeviceData, data: TrainingData, config: Config) -
     for layer in config.layers() {
         network_parameters.push(LayerParameters::create(layer.previous_size, layer.size, &gpu.device));
     }
-
     assert!(data.training.len() > 0, "No training data");
 
-    eval_performance(&data.training, &gpu, &config, &network_parameters).await;
-
+    let bench_resources = EvalResources::init(gpu, &config, &network_parameters, &data.checking);
     let resources = TrainingResources::init(&gpu, config, &network_parameters, &data.training);
 
-    for _ in 0..10 {
-        for _ in 0..500 {
-            run_training_step(&gpu, &resources);
-        }
-    
-        gpu.device.poll(wgpu::MaintainBase::Wait);
+    let mut performance = eval_performance(&data.training, &gpu, &resources.config, &resources.eval_resources).await;
+    let mut bench_performance = eval_performance(&data.checking, &gpu, &resources.config, &bench_resources).await;
 
-        eval_performance(&data.training, &gpu, &resources.config, &network_parameters).await;
-    }
+    let iterations_per_step = 500;
+
+    println!("Benchmark on {} points {bench_performance}", bench_performance.datapoints);
+    println!("Training performance on {} points {performance}", performance.datapoints);
+    println!("{bench_performance} Benchmark on {} points", bench_performance.datapoints);
+    println!("{performance} Training performance on {} points", performance.datapoints);
+    println!("Starting the training process. Doing {iterations_per_step} iterations per step");
+
     gpu.device.poll(wgpu::MaintainBase::Wait);
     gpu.device.start_capture();
     run_training_step(&gpu, &resources);
     gpu.device.stop_capture();
 
-    gpu.device.poll(wgpu::MaintainBase::Wait);
+    let mut stagnated_performance = 0;
+    loop {
+        for _ in 0..iterations_per_step {
+            run_training_step(&gpu, &resources);
+        }
+    
+        gpu.device.poll(wgpu::MaintainBase::Wait);
+
+        let next_performance = eval_performance(&data.training, &gpu, &resources.config, &resources.eval_resources).await;
+        let next_bench_performance = eval_performance(&data.checking, &gpu, &resources.config, &bench_resources).await;
+
+        println!("{next_bench_performance} Benchmark on {} points", next_bench_performance.datapoints);
+        println!("{next_performance} Training performance on {} points", next_performance.datapoints);
+
+        if performance.avg_err - next_performance.avg_err < 0.0001 || next_bench_performance.avg_err > bench_performance.avg_err  {
+            stagnated_performance += 1;
+        } else {
+            stagnated_performance = 0;
+        }
+        if stagnated_performance == 2 {
+            println!("Training performance stagnated for two iterations in a row, stopping training");
+            break;
+        }
+
+        performance = next_performance;
+        bench_performance = next_bench_performance;
+    }
 
     return network_parameters;
 }
@@ -105,14 +133,7 @@ pub async fn eval_single(data: &str, gpu: &GpuDeviceData, config: &Config, resou
     return output_color;
 }
 
-pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Config, parameters: &WeightsAndBiases) {
-    if data.is_empty() {
-        println!("Can't run performance evaluation. No data was marked to be used for checking");
-        return;
-    }
-
-    let resources = EvalResources::init(gpu, config, parameters, data);
-
+pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Config, resources: &EvalResources) -> PerformanceEval {
     // Run the NN forwards on the data
     let mut commands = gpu.device.create_command_encoder(&CommandEncoderDescriptor { label: Some("Performance evaluation") });
     for layer in 0..config.num_layers() {
@@ -151,9 +172,34 @@ pub async fn eval_performance(data: &DataSet, gpu: &GpuDeviceData, config: &Conf
             });
     }
     output_buf.unmap();
-    assert_eq!(count, data.len());
+    assert_eq!(count, resources.invocations);
 
-    println!("Tested on {} datapoints. min/avg/max vmin/vmax = ({}, {}, {}) ({}, {})", count, min, total_cost / (count as f64), max, vmin, vmax);
+    return PerformanceEval {
+        datapoints: count,
+        min_err: min,
+        avg_err: total_cost / (count as f64),
+        max_err: max,
+        spread_min: vmin,
+        spread_max: vmax,
+    };
+}
+
+pub struct PerformanceEval {
+    pub datapoints: usize,
+
+    pub min_err: MainType,
+    pub avg_err: f64,
+    pub max_err: MainType,
+
+    // Really these are just used to detect if the network is outputting the same values for everything.
+    pub spread_min: MainType,
+    pub spread_max: MainType,
+}
+
+impl Display for PerformanceEval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "min/avg/max ({}, {}, {}) spread = ({}, {})", self.min_err, self.avg_err, self.max_err, self.spread_min, self.spread_max)
+    }
 }
 
 /// Resources used during training. Superset of resources used during evals.

@@ -1,8 +1,0 @@
-{
-    "input_length": 24,
-    "percentage_training": 1,
-    "layers": [
-        128,
-        3
-    ]
-}

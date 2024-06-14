@@ -1,0 +1,12 @@
+{
+    // The amount of characters that the nn can maximally input
+    "input_length": 24,
+    // Determines the ratio of the training data which is used for actual training
+    // vs what's used for benchmarking how well the training went
+    "percentage_training": 0.9,
+    "layers": [
+        32,
+        32,
+        3
+    ]
+}
