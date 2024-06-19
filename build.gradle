@@ -97,8 +97,9 @@ processResources {
 		expand "version": project.version
 	}
 
-	// Includes the neural network inside of the jar
+	// Includes the neural network and its config inside of the jar
 	from(tasks.named("train_network").get().output)
+	from(tasks.named("nn_config").get().output)
 }
 
 ////////////////////////////////
