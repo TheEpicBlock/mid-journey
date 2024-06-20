@@ -1,6 +1,5 @@
 package nl.theepicblock.mid.journey.nn;
 
-import com.google.gson.FieldNamingPolicy;
 import com.google.gson.GsonBuilder;
 
 import java.io.Reader;
