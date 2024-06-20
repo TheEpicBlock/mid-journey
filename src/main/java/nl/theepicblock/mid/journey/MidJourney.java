@@ -2,21 +2,30 @@ package nl.theepicblock.mid.journey;
 
 import net.fabricmc.api.ModInitializer;
 
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.util.Identifier;
+import nl.theepicblock.mid.journey.screen.AssScreenHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MidJourney implements ModInitializer {
-	// This logger is used to write text to the console and the log file.
-	// It is considered best practice to use your mod id as the logger's name.
-	// That way, it's clear which mod wrote info, warnings, and errors.
     public static final Logger LOGGER = LoggerFactory.getLogger("mid-journey");
+
+	public static final Block ASS_BLOCK = new AssBlock(AbstractBlock.Settings.copy(Blocks.IRON_BLOCK));
+	public static final ScreenHandlerType<AssScreenHandler> ASS_SCREEN_HANDLER_SCREEN_HANDLER_TYPE = Registry.register(Registries.SCREEN_HANDLER, id("ass"), new ScreenHandlerType<>((id, inv) -> new AssScreenHandler(id), FeatureFlags.VANILLA_FEATURES));
 
 	@Override
 	public void onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
+		Registry.register(Registries.BLOCK, id("ass_block"), ASS_BLOCK);
+	}
 
-		LOGGER.info("Hello Fabric world!");
+	public static Identifier id(String path) {
+		return Identifier.of("mid-journey", path);
 	}
 }

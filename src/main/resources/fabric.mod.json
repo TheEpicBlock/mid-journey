@@ -17,6 +17,9 @@
 	"entrypoints": {
 		"main": [
 			"nl.theepicblock.mid.journey.MidJourney"
+		],
+		"client": [
+			"nl.theepicblock.mid.journey.MidJourneyClient"
 		]
 	},
 	"mixins": [
