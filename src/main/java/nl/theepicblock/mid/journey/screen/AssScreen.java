@@ -10,6 +10,8 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import nl.theepicblock.mid.journey.MidJourney;
+import nl.theepicblock.mid.journey.MidJourneyClient;
+import nl.theepicblock.mid.journey.nn.NeuralNetwork;
 
 @Environment(EnvType.CLIENT)
 public class AssScreen extends HandledScreen<AssScreenHandler> {
@@ -34,7 +36,7 @@ public class AssScreen extends HandledScreen<AssScreenHandler> {
         input.setEditableColor(-1);
         input.setUneditableColor(-1);
         input.setDrawsBackground(false);
-        input.setMaxLength(50);
+        input.setMaxLength(MidJourneyClient.NN_CONFIG.inputLength());
         input.setChangedListener(this::onTextChanged);
         input.setText("");
         this.addSelectableChild(this.input);
@@ -48,7 +50,7 @@ public class AssScreen extends HandledScreen<AssScreenHandler> {
 
     private void onTextChanged(String newString) {
         // Called when the user edits the texts
-        currentColour = 0xFFFFFFFF;
+        currentColour = NeuralNetwork.eval(newString);
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {

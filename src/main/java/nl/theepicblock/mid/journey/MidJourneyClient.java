@@ -4,14 +4,16 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import nl.theepicblock.mid.journey.nn.NNConfig;
+import nl.theepicblock.mid.journey.nn.NetworkParameters;
 import nl.theepicblock.mid.journey.screen.AssScreen;
 
 import java.io.InputStreamReader;
-import java.util.Objects;
 
 @Environment(EnvType.CLIENT)
 public class MidJourneyClient implements ClientModInitializer {
     public static final NNConfig NN_CONFIG;
+    public static final NetworkParameters[] NN_PARAMETERS;
 
     @Override
     public void onInitializeClient() {
@@ -19,10 +21,15 @@ public class MidJourneyClient implements ClientModInitializer {
     }
 
     static {
-        var stream = MidJourneyClient.class.getResourceAsStream("/nn_config.json");
-        if (stream == null) {
+        var configStream = MidJourneyClient.class.getResourceAsStream("/nn_config.json");
+        if (configStream == null) {
             throw new RuntimeException("Couldn't find config file in jar resources");
         }
-        NN_CONFIG = NNConfig.load(new InputStreamReader(stream));
+        NN_CONFIG = NNConfig.load(new InputStreamReader(configStream));
+        var parameterStream = MidJourneyClient.class.getResourceAsStream("/network_parameters.json");
+        if (parameterStream == null) {
+            throw new RuntimeException("Couldn't find parameter file in jar resources");
+        }
+        NN_PARAMETERS = NetworkParameters.load(new InputStreamReader(parameterStream));
     }
 }
