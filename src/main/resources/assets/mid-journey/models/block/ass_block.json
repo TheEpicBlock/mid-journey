@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "polymc-testmod:block/test_block"
+    "all": "mid-journey:block/ass_block"
   }
 }
