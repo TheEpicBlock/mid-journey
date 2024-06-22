@@ -100,4 +100,9 @@ public class AssScreen extends Screen {
         this.input.render(context, mouseX, mouseY, delta);
         this.activationButton.render(context, mouseX, mouseY, delta);
     }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
 }

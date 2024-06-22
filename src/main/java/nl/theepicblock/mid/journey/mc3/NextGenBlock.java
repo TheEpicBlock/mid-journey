@@ -19,5 +19,5 @@ public abstract class NextGenBlock extends Block {
         super(settings);
     }
 
-    public abstract void doShitWithBlockChain(WorldAccess world, BlockPos pos);
+    public abstract void doShitWithBlockChain(WorldAccess world, BlockPos pos) throws AetherException;
 }

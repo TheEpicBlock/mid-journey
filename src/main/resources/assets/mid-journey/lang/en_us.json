@@ -1,5 +1,7 @@
 {
   "container.midjourney.ass": "Advanced Building Assistant",
   "container.midjourney.ass_tooltip": "Enter colour",
-  "container.midjourney.ass_activate": "Activatus Blockus"
+  "container.midjourney.ass_activate": "Activatus Blockus",
+  "block.mid-journey.colour_block": "Coloured Block",
+  "block.mid-journey.ass_block": "Advanced Assistant™"
 }
