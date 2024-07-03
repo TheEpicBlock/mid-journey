@@ -3,12 +3,10 @@ package nl.theepicblock.mid.journey;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -21,7 +19,6 @@ import nl.theepicblock.mid.journey.mc3.NextGenBlock;
 
 public class AssBlock extends NextGenBlock {
     public static final MapCodec<AssBlock> CODEC = createCodec(AssBlock::new);
-    private static final Text TITLE = Text.translatable("container.midjourney.ass");
 
     public AssBlock(Settings settings) {
         super(settings);
@@ -40,7 +37,7 @@ public class AssBlock extends NextGenBlock {
 
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (world.isClient) {
-            MinecraftClient.getInstance().setScreen(new AssScreen(pos, TITLE));
+            AssScreenProxy.openAssScreen(pos);
             return ActionResult.SUCCESS;
         } else {
             return ActionResult.CONSUME;
